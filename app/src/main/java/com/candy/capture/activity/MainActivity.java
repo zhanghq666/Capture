@@ -30,6 +30,7 @@ import android.view.animation.OvershootInterpolator;
 
 import com.candy.capture.R;
 import com.candy.capture.adapter.ContentListAdapter;
+import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.service.LocationService;
@@ -73,6 +74,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
 
     private MediaPlayer mMediaPlayer;
     private MediaPlayState mPlayState;
+
+    private int mCurrentPlayingItemIndex = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,7 +144,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     }
 
 
-
+    //region 定位
     @TargetApi(Build.VERSION_CODES.M)
     private void startLocation() {
         // 权限未拿到时从Main去请求权限、启动定位Service，拿到以后从Splash启动
@@ -171,6 +174,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         Intent intent = new Intent(mContext, LocationService.class);
         bindService(intent, conn, BIND_AUTO_CREATE);
     }
+    //endregion
 
     //region 权限相关
     @TargetApi(Build.VERSION_CODES.M)
@@ -235,7 +239,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         boolean result = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ArrayList<String> permissions = new ArrayList<String>();
-			/*
+            /*
 			 * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
 			 */
             // 读写权限
@@ -554,6 +558,55 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
+    @Override
+    public void onAudioViewClick(int position) {
+        if (mIsInEditMode) {
+            onItemClick(position);
+            return;
+        }
+        if (mCurrentPlayingItemIndex == position) {
+            if (MediaPlayState.STARTED == mPlayState) {
+                stopMedia();
+            } else if (MediaPlayState.COMPLETED == mPlayState || MediaPlayState.PREPARED == mPlayState) {
+                playMedia();
+            } else if (MediaPlayState.STOPPED == mPlayState) {
+                prepareMediaPlayer();
+                playMedia();
+            }
+        } else {
+            if (mCurrentPlayingItemIndex >= 0) {
+                if (MediaPlayState.STARTED == mPlayState) {
+                    stopMedia();
+                }
+
+                mMediaPlayer.reset();
+                mPlayState = MediaPlayState.IDLE;
+            }
+
+            mCurrentPlayingItemIndex = position;
+
+            setMediaPlayerSource();
+            prepareMediaPlayer();
+            playMedia();
+        }
+    }
+
+    private void playMedia() {
+        mMediaPlayer.start();
+        mPlayState = MediaPlayState.STARTED;
+
+        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(true);
+        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
+    }
+
+    private void stopMedia() {
+        mMediaPlayer.stop();
+        mPlayState = MediaPlayState.STOPPED;
+
+        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(false);
+        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
+    }
+
     private void gotoEditMode() {
         mIsInEditMode = true;
         invalidateOptionsMenu();
@@ -580,9 +633,17 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     @Override
     protected void onResume() {
         super.onResume();
-//        if (ConstantValues.CONTENT_TYPE_AUDIO == mType || ConstantValues.CONTENT_TYPE_VIDEO == mType) {
-//            initMediaPlayer();
-//        }
+
+        initMediaPlayer();
+    }
+
+    public double getPlayPercent() {
+        double percent = 0.0;
+        if (MediaPlayState.STARTED == mPlayState) {
+            percent = (double) mMediaPlayer.getCurrentPosition() / mMediaPlayer.getDuration();
+        }
+        Log.d(TAG, "getPlayPercent percent = "+percent);
+        return percent;
     }
 
     private void initMediaPlayer() {
@@ -593,9 +654,9 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                 @Override
                 public void onCompletion(MediaPlayer mp) {
                     mPlayState = MediaPlayState.COMPLETED;
-//                    if (mAudioView != null) {
-//                        mAudioView.stopAnimation();
-//                    }
+
+                    mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(false);
+                    mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
                 }
             });
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
@@ -612,17 +673,19 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                 }
             });
         }
-        setMediaPlayerSource();
-        prepareMediaPlayer();
+        if (mCurrentPlayingItemIndex >= 0) {
+            setMediaPlayerSource();
+            prepareMediaPlayer();
+        }
     }
 
     private void setMediaPlayerSource() {
-//        try {
-//            mMediaPlayer.setDataSource(mContent.getMediaFilePath());
-//            mPlayState = MediaPlayState.INITIALIZED;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            mMediaPlayer.setDataSource(mContentList.get(mCurrentPlayingItemIndex).getMediaFilePath());
+            mPlayState = MediaPlayState.INITIALIZED;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void prepareMediaPlayer() {
@@ -638,7 +701,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     protected void onPause() {
         super.onPause();
         if (mMediaPlayer != null) {
-            if (mMediaPlayer.isPlaying()) {
+            if (MediaPlayState.STARTED == mPlayState) {
                 mMediaPlayer.stop();
             }
             mMediaPlayer.release();

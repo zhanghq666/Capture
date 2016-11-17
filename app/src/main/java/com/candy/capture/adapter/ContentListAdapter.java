@@ -2,6 +2,7 @@ package com.candy.capture.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.TimeUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.candy.capture.R;
+import com.candy.capture.activity.MainActivity;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.customview.AudioView;
 import com.candy.capture.model.Content;
@@ -117,9 +119,24 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
             viewHolder.mAudioView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    viewHolder.mAudioView.startAnimation();
+                    if (mItemClickCallback != null) {
+                        mItemClickCallback.onAudioViewClick(position);
+                    }
                 }
             });
+            viewHolder.mAudioView.setDuration(content.getMediaDuration());
+            if (content.isPlayingAudio()) {
+                if (mContext instanceof MainActivity) {
+                    double percent = ((MainActivity) mContext).getPlayPercent();
+                    if (percent < 0) {
+                        viewHolder.mAudioView.stopAnimation();
+                    } else {
+                        viewHolder.mAudioView.startAnimation(percent);
+                    }
+                }
+            } else {
+                viewHolder.mAudioView.stopAnimation();
+            }
         }
     }
 
@@ -165,5 +182,7 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
         void onItemClick(int position);
 
         void onItemLongPressed(int position);
+
+        void onAudioViewClick(int position);
     }
 }

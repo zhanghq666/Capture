@@ -37,11 +37,19 @@ public class Content implements Serializable {
      */
     private int releaseTime;
     /**
-     * 是否已同步到服务器
+     * 是否已同步到服务器（暂时无用）
      */
-    private boolean isSynced;   //暂时无用
+    private boolean isSynced;
 
+    /**
+     * 是否选中
+     */
     private boolean isSelect;
+    /**
+     * 是否在播放音频
+     */
+    private boolean isPlayingAudio;
+
 
     public int getId() {
         return id;
@@ -147,5 +155,13 @@ public class Content implements Serializable {
         result = 31 * result + (isSynced ? 1 : 0);
         result = 31 * result + (isSelect ? 1 : 0);
         return result;
+    }
+
+    public boolean isPlayingAudio() {
+        return isPlayingAudio;
+    }
+
+    public void setPlayingAudio(boolean playingAudio) {
+        isPlayingAudio = playingAudio;
     }
 }
