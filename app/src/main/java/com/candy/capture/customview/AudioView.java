@@ -96,8 +96,19 @@ public final class AudioView extends View {
     }
 
     public void startAnimation() {
+        startAnimation(0);
         mCurrentProgress = 0;
         mProgressRectWidth = 0;
+        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
+        mMinAdd = (getMeasuredWidth() - 2 * strokeWidth) / (double) mDuration;
+        mState = STATE_PLAYING;
+        mDrawState = DRAW_STATE_SMALL;
+        mHandler.sendEmptyMessage(0);
+    }
+
+    public void startAnimation(double progressInPercent) {
+        mCurrentProgress = 0;
+        mProgressRectWidth = progressInPercent * getMeasuredWidth();
         int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         mMinAdd = (getMeasuredWidth() - 2 * strokeWidth) / (double) mDuration;
         mState = STATE_PLAYING;
@@ -215,12 +226,13 @@ public final class AudioView extends View {
 
     private void drawProgress(Canvas canvas) {
 
+        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         mProgressRectWidth += mMinAdd;
+        mProgressRectWidth = mProgressRectWidth > getMeasuredWidth() - strokeWidth ? getMeasuredWidth() - strokeWidth : mProgressRectWidth;
         mPaint.setColor(0xffebebeb);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.save();
         Path path = new Path();
-        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         path.addRoundRect(new RectF(0, 0, getMeasuredWidth(), getMeasuredHeight()),
                 getMeasuredHeight() / 6, getMeasuredHeight() / 6, Path.Direction.CW);
         canvas.clipPath(path);
