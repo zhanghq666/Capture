@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content_audio_record"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.candy.capture.activity.AudioRecordActivity"
+    tools:showIn="@layout/activity_audio_record">
+
+    <RelativeLayout
+        android:id="@+id/rl_record"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/audio_record_ring">
+
+        <ImageView
+            android:id="@+id/iv_microphone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            android:src="@mipmap/ic_microphone"/>
+        <com.candy.capture.customview.AudioIndicators
+            android:id="@+id/audio_indicators"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/iv_microphone"
+            android:layout_centerHorizontal="true"/>
+        <TextView
+            android:id="@+id/tv_record_tips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/iv_microphone"
+            android:text="开始录音"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="16sp"/>
+        <TextView
+            android:id="@+id/tv_record_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_record_tips"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="14sp"
+            android:layout_marginTop="@dimen/brother_space"/>
+    </RelativeLayout>
+</RelativeLayout>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#081fcc</color>
+    <color name="colorPrimaryDark">#071bb3</color>
+    <!--<color name="colorAccent">#FF4081</color>-->
+
+    <color name="colorTextPrimary">#1f1f1f</color>
+    <color name="colorTextSecondary">#232323</color>
+    <color name="colorGray">#aaaaaa</color>
+
+    <color name="colorAudioPoint1">#0923e5</color>
+    <color name="colorAudioPoint2">#081fcc</color>
+    <color name="colorAudioPoint3">#071bb2</color>
+    <color name="colorAudioPoint4">#061799</color>
+</resources>
