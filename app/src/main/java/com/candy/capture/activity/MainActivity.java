@@ -46,11 +46,16 @@ import java.util.ArrayList;
 public class MainActivity extends BaseActivity implements ContentListAdapter.ItemClickCallback {
 
     private static final String TAG = "MainActivity";
+    // 列表获取更多时用到的提前量
+    private static final int LIST_BUFFER_THRESHOLD = 3;
+
     private final int WHOLE_PERMISSION_REQUEST = 1;
     private final int AUDIO_PERMISSION_REQUEST = 2;
     private final int VIDEO_PERMISSION_REQUEST = 3;
 
     private final int REQ_CODE_ADD_CONTENT = 1;
+    private final int REQ_CODE_TAKE_PICTURE = 2;
+    private final int REQ_CODE_VIDEO_CAPTURE = 3;
 
     private DBHelper mDBHelper;
     private static final int COUNT = 20;
@@ -61,21 +66,47 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     private FloatingActionButton mAddAudioFab;
     private FloatingActionButton mAddPhotoFab;
     private FloatingActionButton mAddVideoFab;
+    /**
+     * 控制FloatingActionButton动画收回的透明View
+     */
     private View mMaskView;
 
     private RecyclerView mContentsRv;
 
+    /**
+     * 标识添加内容是否处于展开状态
+     */
     private boolean mIsAddButtonPressed;
+    /**
+     * 标识是否处于编辑模式
+     */
     private boolean mIsInEditMode;
-
+    /**
+     * 内容集合
+     */
     private ArrayList<Content> mContentList;
+    /**
+     * 编辑状态下选中内容项集合
+     */
     private ArrayList<Content> mSelectedContents;
+    /**
+     * RecyclerView Adapter
+     */
     private ContentListAdapter mContentListAdapter;
 
+    /**
+     * 音频MediaPlayer实例
+     */
     private MediaPlayer mMediaPlayer;
+    /**
+     * 音频MediaPlayer状态
+     */
     private MediaPlayState mPlayState;
-
+    /**
+     * 正在播放音频的列表项索引
+     */
     private int mCurrentPlayingItemIndex = -1;
+    private boolean mIsLoadingData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,6 +172,20 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         mContentsRv.setAdapter(mContentListAdapter);
         mContentsRv.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
         mContentsRv.addItemDecoration(new ContentListDivider(mContext));
+        mContentsRv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int totalItemCount = layoutManager.getItemCount();
+                int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
+                if (!mIsLoadingData && totalItemCount < (lastVisibleItem + LIST_BUFFER_THRESHOLD)) {
+                    getContents();
+                }
+            }
+        });
     }
 
 
@@ -240,7 +285,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ArrayList<String> permissions = new ArrayList<String>();
             /*
-			 * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
+             * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
 			 */
             // 读写权限
             addPermission(permissions, Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -399,6 +444,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
 
     //region 获取内容
     private void getNewerContents() {
+        mIsLoadingData = true;
         if (mContentList == null || mContentList.isEmpty()) {
             mContentList = mDBHelper.getContentNewer(-1, COUNT);
             mContentListAdapter.setContents(mContentList);
@@ -408,9 +454,11 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             int count = contents.size();
             mContentListAdapter.notifyItemRangeInserted(0, count);
         }
+        mIsLoadingData = false;
     }
 
     private void getContents() {
+        mIsLoadingData = true;
         if (mContentList == null || mContentList.isEmpty()) {
             mContentList = mDBHelper.getContentOlder(-1, COUNT);
             mContentListAdapter.setContents(mContentList);
@@ -422,6 +470,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             mContentList.addAll(contents);
             mContentListAdapter.notifyItemRangeInserted(startPosition, count);
         }
+        mIsLoadingData = false;
     }
     //endregion
 
@@ -591,45 +640,42 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
-    private void playMedia() {
-        mMediaPlayer.start();
-        mPlayState = MediaPlayState.STARTED;
-
-        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(true);
-        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
-    }
-
-    private void stopMedia() {
-        mMediaPlayer.stop();
-        mPlayState = MediaPlayState.STOPPED;
-
-        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(false);
-        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
-    }
-
     private void gotoEditMode() {
         mIsInEditMode = true;
+        // 改变菜单项
         invalidateOptionsMenu();
+        // 隐藏添加按钮
         hideAddButton();
+        // 停止播放音频、释放资源
+        releaseMedia();
+        mCurrentPlayingItemIndex = -1;
+        // 列表显示变化
         mContentListAdapter.setEditMode(true);
         mContentListAdapter.notifyDataSetChanged();
     }
 
     private void exitEditMode() {
         mIsInEditMode = false;
+        // 改变菜单项
         invalidateOptionsMenu();
+        // 显示添加按钮
         showAddButton();
+        // 重新组织MediaPlayer
+        initMediaPlayer();
+        // 清空已选项集合
         if (mSelectedContents != null && !mSelectedContents.isEmpty()) {
             for (Content content : mSelectedContents) {
                 content.setSelect(false);
             }
             mSelectedContents.clear();
         }
+        // 列表显示变化
         mContentListAdapter.setEditMode(false);
         mContentListAdapter.notifyDataSetChanged();
     }
     //endregion
 
+    //region 语音播放相关
     @Override
     protected void onResume() {
         super.onResume();
@@ -637,12 +683,16 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         initMediaPlayer();
     }
 
+    /**
+     * 供Adapter调用获取当前音频播放进度
+     * @return
+     */
     public double getPlayPercent() {
         double percent = 0.0;
         if (MediaPlayState.STARTED == mPlayState) {
             percent = (double) mMediaPlayer.getCurrentPosition() / mMediaPlayer.getDuration();
         }
-        Log.d(TAG, "getPlayPercent percent = "+percent);
+        Log.d(TAG, "getPlayPercent percent = " + percent);
         return percent;
     }
 
@@ -697,16 +747,39 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
+    private void playMedia() {
+        mMediaPlayer.start();
+        mPlayState = MediaPlayState.STARTED;
+
+        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(true);
+        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
+    }
+
+    private void stopMedia() {
+        mMediaPlayer.stop();
+        mPlayState = MediaPlayState.STOPPED;
+
+        mContentList.get(mCurrentPlayingItemIndex).setPlayingAudio(false);
+        mContentListAdapter.notifyItemChanged(mCurrentPlayingItemIndex);
+    }
+
+    private void releaseMedia() {
+        if (mMediaPlayer != null) {
+            if (MediaPlayState.STARTED == mPlayState) {
+                stopMedia();
+            }
+            mMediaPlayer.release();
+            mPlayState = MediaPlayState.END;
+            mMediaPlayer = null;
+        }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
-        if (mMediaPlayer != null) {
-            if (MediaPlayState.STARTED == mPlayState) {
-                mMediaPlayer.stop();
-            }
-            mMediaPlayer.release();
-        }
+        releaseMedia();
     }
+    //endregion
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -726,6 +799,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             exitEditMode();
         } else {
             super.onBackPressed();
+//            finish();
+//            System.exit(0);
         }
     }
 }

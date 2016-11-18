@@ -155,12 +155,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
     @Override
     protected void onPause() {
         super.onPause();
-        if (mMediaPlayer != null) {
-            if (mMediaPlayer.isPlaying()) {
-                mMediaPlayer.stop();
-            }
-            mMediaPlayer.release();
-        }
+        releaseMedia();
     }
 
     @Override
@@ -238,6 +233,17 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
 
         if (mAudioView != null) {
             mAudioView.stopAnimation();
+        }
+    }
+
+    private void releaseMedia() {
+        if (mMediaPlayer != null) {
+            if (MediaPlayState.STARTED == mPlayState) {
+                stopMedia();
+            }
+            mMediaPlayer.release();
+            mPlayState = MediaPlayState.END;
+            mMediaPlayer = null;
         }
     }
 }
