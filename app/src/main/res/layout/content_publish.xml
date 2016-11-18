@@ -30,4 +30,18 @@
         android:layout_marginTop="20dp"
         android:layout="@layout/viewstub_audio_view"/>
 
+    <ViewStub
+        android:id="@+id/stub_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout="@layout/viewstub_image_view"/>
+
+    <ViewStub
+        android:id="@+id/stub_video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout="@layout/viewstub_video_view"/>
+
 </LinearLayout>

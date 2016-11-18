@@ -123,6 +123,14 @@ public class Content implements Serializable {
         isSelect = select;
     }
 
+    public boolean isPlayingAudio() {
+        return isPlayingAudio;
+    }
+
+    public void setPlayingAudio(boolean playingAudio) {
+        isPlayingAudio = playingAudio;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -136,6 +144,7 @@ public class Content implements Serializable {
         if (releaseTime != content.releaseTime) return false;
         if (isSynced != content.isSynced) return false;
         if (isSelect != content.isSelect) return false;
+        if (isPlayingAudio != content.isPlayingAudio) return false;
         if (desc != null ? !desc.equals(content.desc) : content.desc != null) return false;
         if (mediaFilePath != null ? !mediaFilePath.equals(content.mediaFilePath) : content.mediaFilePath != null)
             return false;
@@ -154,14 +163,7 @@ public class Content implements Serializable {
         result = 31 * result + releaseTime;
         result = 31 * result + (isSynced ? 1 : 0);
         result = 31 * result + (isSelect ? 1 : 0);
+        result = 31 * result + (isPlayingAudio ? 1 : 0);
         return result;
-    }
-
-    public boolean isPlayingAudio() {
-        return isPlayingAudio;
-    }
-
-    public void setPlayingAudio(boolean playingAudio) {
-        isPlayingAudio = playingAudio;
     }
 }

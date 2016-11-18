@@ -12,4 +12,7 @@
     <color name="colorAudioPoint2">#081fcc</color>
     <color name="colorAudioPoint3">#071bb2</color>
     <color name="colorAudioPoint4">#061799</color>
+
+    <color name="colorBlack">#000000</color>
+    <color name="colorWhite">#ffffff</color>
 </resources>

@@ -4,15 +4,18 @@ import android.Manifest;
 import android.animation.Animator;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -32,11 +35,13 @@ import com.candy.capture.R;
 import com.candy.capture.adapter.ContentListAdapter;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
+import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.service.LocationService;
 import com.candy.capture.customview.ContentListDivider;
 import com.candy.capture.model.Content;
 import com.candy.capture.util.DensityUtil;
+import com.candy.capture.util.FileUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.File;
@@ -107,6 +112,9 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
      */
     private int mCurrentPlayingItemIndex = -1;
     private boolean mIsLoadingData;
+    private boolean mHasMore;
+
+    private String mCameraFilePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,7 +189,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 int totalItemCount = layoutManager.getItemCount();
                 int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
-                if (!mIsLoadingData && totalItemCount < (lastVisibleItem + LIST_BUFFER_THRESHOLD)) {
+                if (mHasMore && !mIsLoadingData && totalItemCount < (lastVisibleItem + LIST_BUFFER_THRESHOLD)) {
                     getContents();
                 }
             }
@@ -363,7 +371,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                             }
                         });
                     } else {
-                        //TODO: goto camera record page
+                        gotoVideoRecord();
                     }
                     break;
             }
@@ -464,11 +472,15 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             mContentListAdapter.setContents(mContentList);
         } else {
             ArrayList contents = mDBHelper.getContentOlder(mContentList.get(mContentList.size() - 1).getId(), COUNT);
-            mContentList.addAll(contents);
-            int startPosition = mContentList.size() - 1;
-            int count = contents.size();
-            mContentList.addAll(contents);
-            mContentListAdapter.notifyItemRangeInserted(startPosition, count);
+            if (contents.size() > 0) {
+                mContentList.addAll(contents);
+                int startPosition = mContentList.size() - 1;
+                int count = contents.size();
+                mContentList.addAll(contents);
+                mContentListAdapter.notifyItemRangeInserted(startPosition, count);
+            } else {
+                mHasMore = false;
+            }
         }
         mIsLoadingData = false;
     }
@@ -555,10 +567,11 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                     }
                     break;
                 case R.id.fab_add_photo:
+                    gotoTakePicture();
                     break;
                 case R.id.fab_add_video:
                     if (getVideoPermissions()) {
-
+                        gotoVideoRecord();
                     }
                     break;
             }
@@ -573,6 +586,35 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     private void gotoAudioRecord() {
         Intent intent = new Intent(mContext, AudioRecordActivity.class);
         startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
+    }
+
+    private void gotoTakePicture() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        mCameraFilePath = FileUtil.getMediaFilePath(this, FileUtil.MEDIA_TYPE_PHOTO);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(mCameraFilePath)));
+        } else {
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath);
+            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        }
+
+        startActivityForResult(intent, REQ_CODE_TAKE_PICTURE);
+    }
+
+    private void gotoVideoRecord() {
+        Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        mCameraFilePath = FileUtil.getMediaFilePath(this, FileUtil.MEDIA_TYPE_VIDEO);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(mCameraFilePath)));
+        } else {
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath);
+            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        }
+        startActivityForResult(intent, REQ_CODE_VIDEO_CAPTURE);
     }
     //endregion
 
@@ -640,6 +682,30 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
+    @Override
+    public void onImageViewClick(int position) {
+        if (mIsInEditMode) {
+            onItemClick(position);
+            return;
+        }
+        ArrayList<String> list = new ArrayList<>();
+        list.add(mContentList.get(position).getMediaFilePath());
+        ImageViewerDialog.showDialog(this, list, 1);
+    }
+
+    @Override
+    public void onVideoViewClick(int position) {
+        if (mIsInEditMode) {
+            onItemClick(position);
+            return;
+        }
+
+        if (MediaPlayState.STARTED == mPlayState) {
+            stopMedia();
+        }
+        //TODO: 视频播放
+    }
+
     private void gotoEditMode() {
         mIsInEditMode = true;
         // 改变菜单项
@@ -685,6 +751,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
 
     /**
      * 供Adapter调用获取当前音频播放进度
+     *
      * @return
      */
     public double getPlayPercent() {
@@ -786,6 +853,28 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         if (REQ_CODE_ADD_CONTENT == requestCode) {
             if (RESULT_OK == resultCode) {
                 getNewerContents();
+            }
+        } else if (REQ_CODE_TAKE_PICTURE == requestCode) {
+            if (RESULT_OK == resultCode) {
+                if (!TextUtils.isEmpty(mCameraFilePath)) {
+                    Content content = new Content();
+                    content.setType(ConstantValues.CONTENT_TYPE_PHOTO);
+                    content.setMediaFilePath(mCameraFilePath);
+                    Intent intent = new Intent(this, PublishActivity.class);
+                    intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_PHOTO);
+                    intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content);
+                    startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
+                }
+            }
+        } else if (REQ_CODE_VIDEO_CAPTURE == requestCode) {
+            if (RESULT_OK == resultCode) {
+                Content content = new Content();
+                content.setType(ConstantValues.CONTENT_TYPE_VIDEO);
+                content.setMediaFilePath(mCameraFilePath);
+                Intent intent = new Intent(this, PublishActivity.class);
+                intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_VIDEO);
+                intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content);
+                startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
             }
         }
     }

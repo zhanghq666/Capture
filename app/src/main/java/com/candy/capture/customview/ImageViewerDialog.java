@@ -29,14 +29,12 @@ public class ImageViewerDialog extends Dialog {
     private List<String> mDataSource;
 
     private int mCurrentIndex;
-    private int mMaxCount;
 
     private ImageViewerDialog(Context context, List<String> dataSource, int currentIndex) {
         super(context, R.style.image_pager_dialog_theme);
         mContext = context;
         mDataSource = dataSource;
         mCurrentIndex = currentIndex;
-        mMaxCount = mDataSource == null ? 0 : mDataSource.size();
     }
 
     public static void showDialog(Context context, List<String> dataSource, int currentIndex) {
@@ -66,7 +64,10 @@ public class ImageViewerDialog extends Dialog {
         mImagesVp = (ViewPager) findViewById(R.id.vp_images);
         mIndexerTv = (TextView) findViewById(R.id.tv_indexer);
 
-        mIndexerTv.setText(mCurrentIndex + "/" + mMaxCount);
+        mIndexerTv.setText(mCurrentIndex + "/" + mDataSource.size());
+        if (mDataSource.size() <= 1) {
+            mIndexerTv.setVisibility(View.GONE);
+        }
 
         StringPagerAdapter adapter = new StringPagerAdapter(mContext, mDataSource);
         mImagesVp.setAdapter(adapter);
@@ -76,7 +77,7 @@ public class ImageViewerDialog extends Dialog {
             @Override
             public void onPageSelected(int arg0) {
                 mCurrentIndex = arg0 + 1;
-                mIndexerTv.setText(mCurrentIndex + "/" + mMaxCount);
+                mIndexerTv.setText(mCurrentIndex + "/" + mDataSource.size());
             }
 
             @Override
