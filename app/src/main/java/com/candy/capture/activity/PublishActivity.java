@@ -1,11 +1,8 @@
 package com.candy.capture.activity;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
 import android.media.MediaPlayer;
-import android.media.ThumbnailUtils;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
@@ -17,11 +14,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DecodeFormat;
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
-import com.bumptech.glide.load.resource.bitmap.FileDescriptorBitmapDecoder;
-import com.bumptech.glide.load.resource.bitmap.VideoBitmapDecoder;
 import com.candy.capture.R;
 import com.candy.capture.core.BackStackManager;
 import com.candy.capture.core.ConstantValues;
@@ -120,7 +112,6 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
 //                Bitmap bitmap = ThumbnailUtils.createVideoThumbnail(mContent.getMediaFilePath(), MediaStore.Video.Thumbnails.MICRO_KIND);
 //                mVideoCoverView.setImageBitmap(bitmap);
                 GlideImageLoader.getInstance().loadVideoThumbnail(this, mContent.getMediaFilePath(), mVideoCoverView);
-//                GlideImageLoader.getInstance().loadImage(mContext, mContent.getMediaFilePath(), mVideoCoverView);
                 break;
         }
     }
@@ -250,7 +241,9 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
                 ImageViewerDialog.showDialog(this, list, 1);
                 break;
             case R.id.iv_playback_mask:
-                //TODO: 播放视频
+                Intent intent = new Intent(this, VideoPlayerActivity.class);
+                intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContent.getMediaFilePath());
+                startActivity(intent);
                 break;
         }
     }

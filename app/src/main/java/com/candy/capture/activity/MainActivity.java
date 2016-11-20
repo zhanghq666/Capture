@@ -35,6 +35,7 @@ import com.candy.capture.R;
 import com.candy.capture.adapter.ContentListAdapter;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
+import com.candy.capture.core.SharedReferenceManager;
 import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.service.LocationService;
@@ -212,21 +213,28 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
+    private ServiceConnection conn = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
     private void startLocationService() {
-        ServiceConnection conn = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-
-            }
-        };
         Intent intent = new Intent(mContext, LocationService.class);
         bindService(intent, conn, BIND_AUTO_CREATE);
     }
+
+    @Override
+    protected void onDestroy() {
+        unbindService(conn);
+        super.onDestroy();
+    }
+
     //endregion
 
     //region 权限相关
@@ -497,6 +505,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             menu.findItem(R.id.action_search).setVisible(true);
             menu.findItem(R.id.action_delete).setVisible(false);
         }
+        menu.findItem(R.id.action_fast_capture).setChecked(SharedReferenceManager.getInstance(this).isAllowFastCapture());
         return true;
     }
 
@@ -522,6 +531,9 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             }
 
             return true;
+        } else if (id == R.id.action_fast_capture) {
+            item.setChecked(!item.isChecked());
+            SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
         }
 
         return super.onOptionsItemSelected(item);
@@ -703,7 +715,10 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         if (MediaPlayState.STARTED == mPlayState) {
             stopMedia();
         }
-        //TODO: 视频播放
+
+        Intent intent = new Intent(this, VideoPlayerActivity.class);
+        intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList.get(position).getMediaFilePath());
+        startActivity(intent);
     }
 
     private void gotoEditMode() {
