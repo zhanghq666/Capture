@@ -75,6 +75,13 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="">
         </activity>
+        <activity
+            android:name=".activity.SearchActivity"
+            android:label=""
+            android:screenOrientation="portrait"
+            android:theme="@style/SearchTheme"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing">
+        </activity>
     </application>
 
 </manifest>

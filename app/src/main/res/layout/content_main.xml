@@ -13,9 +13,8 @@
     tools:context="com.candy.capture.activity.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/rv_contents"
+    <FrameLayout
+        android:id="@+id/fl_fragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        />
+        android:layout_height="match_parent"/>
 </RelativeLayout>

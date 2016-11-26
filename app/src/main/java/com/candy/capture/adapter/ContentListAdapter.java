@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.ThumbnailUtils;
 import android.provider.MediaStore;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TimeUtils;
@@ -32,17 +33,20 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
     private Context mContext;
     private ArrayList<Content> mContents;
     private ItemClickCallback mItemClickCallback;
+    private AudioPlayCallBack mAudioPlayCallBack;
     private boolean mIsEditMode;
 
-    public ContentListAdapter(Context context, ItemClickCallback callback) {
+    public ContentListAdapter(Context context, ArrayList<Content> contents, AudioPlayCallBack audioPlayCallBack, ItemClickCallback callback) {
         mContext = context;
+        mContents = contents;
+        mAudioPlayCallBack = audioPlayCallBack;
         mItemClickCallback = callback;
     }
 
-    public void setContents(ArrayList<Content> contents) {
-        mContents = contents;
-        notifyDataSetChanged();
-    }
+//    public void setContents(ArrayList<Content> contents) {
+//        mContents = contents;
+//        notifyDataSetChanged();
+//    }
 
 //    public void appendContentsEnd(ArrayList<Content> contents) {
 //        if (mContents == null) {
@@ -133,8 +137,8 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
             });
             viewHolder.mAudioView.setDuration(content.getMediaDuration());
             if (content.isPlayingAudio()) {
-                if (mContext instanceof MainActivity) {
-                    double percent = ((MainActivity) mContext).getPlayPercent();
+                if (mAudioPlayCallBack != null) {
+                    double percent = mAudioPlayCallBack.getPlayPercent();
                     if (percent < 0) {
                         viewHolder.mAudioView.stopAnimation();
                     } else {
@@ -239,5 +243,9 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
         void onImageViewClick(int position);
 
         void onVideoViewClick(int position);
+    }
+
+    public interface AudioPlayCallBack {
+        double getPlayPercent();
     }
 }

@@ -6,4 +6,9 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
+
+    <style name="SearchTheme" parent="AppTheme.NoActionBar">
+        <item name="colorControlHighlight">#dddddd</item>
+        <item name="android:statusBarColor">@color/colorDarkGray</item>
+    </style>
 </resources>
