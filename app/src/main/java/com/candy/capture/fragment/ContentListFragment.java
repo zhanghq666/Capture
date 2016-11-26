@@ -289,6 +289,8 @@ public class ContentListFragment extends Fragment implements ContentListAdapter.
 
     @Override
     public void onItemLongPressed(int position) {
+        if (mIsSearch)
+            return;
         if (!mIsInEditMode) {
             mContentList.get(position).setSelect(true);
             if (mSelectedContents == null)
