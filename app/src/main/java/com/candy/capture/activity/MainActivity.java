@@ -54,8 +54,6 @@ import java.util.ArrayList;
 public class MainActivity extends BaseActivity implements ContentListFragment.OnFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
-    // 列表获取更多时用到的提前量
-    private static final int LIST_BUFFER_THRESHOLD = 3;
 
     private final int WHOLE_PERMISSION_REQUEST = 1;
     private final int AUDIO_PERMISSION_REQUEST = 2;
@@ -216,7 +214,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             // 读写权限
             addPermission(permissions, Manifest.permission.WRITE_EXTERNAL_STORAGE);
             // 读取电话状态权限
-//            addPermission(permissions, Manifest.permission.READ_PHONE_STATE);
+            addPermission(permissions, Manifest.permission.READ_PHONE_STATE);
             // 摄像头权限
             addPermission(permissions, Manifest.permission.CAMERA);
             // 录音权限
