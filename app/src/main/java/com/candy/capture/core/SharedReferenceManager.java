@@ -31,15 +31,18 @@ public class SharedReferenceManager {
 
     private String mLocationCity;
     private boolean mAllowFastCapture;
+    private boolean mIsFirstRun;
 
     private static final String KEY_LOCATION_CITY = "key_location_city";
     private static final String KEY_FAST_CAPTURE = "key_fast_capture";
+    private static final String KEY_IS_FIRST_RUN = "key_is_first_run";
 
     private void init() {
         mSharedPreferences = mContext.getSharedPreferences("capture", 0);
 
         mLocationCity = mSharedPreferences.getString(KEY_LOCATION_CITY, ConstantValues.DEFAULT_CITY_NAME);
         mAllowFastCapture = mSharedPreferences.getBoolean(KEY_FAST_CAPTURE, false);
+        mIsFirstRun = mSharedPreferences.getBoolean(KEY_IS_FIRST_RUN, true);
     }
 
     public String getLocationCity() {
@@ -60,5 +63,14 @@ public class SharedReferenceManager {
     public void setAllowFastCapture(boolean allowFastCapture) {
         mAllowFastCapture = allowFastCapture;
         mSharedPreferences.edit().putBoolean(KEY_FAST_CAPTURE, mAllowFastCapture).apply();
+    }
+
+    public boolean isFirstRun() {
+        return mIsFirstRun;
+    }
+
+    public void setFirstRun(boolean firstRun) {
+        mIsFirstRun = firstRun;
+        mSharedPreferences.edit().putBoolean(KEY_IS_FIRST_RUN, mIsFirstRun).apply();
     }
 }

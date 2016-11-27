@@ -109,6 +109,8 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         getWholePermissions();
 
         if (savedInstanceState == null) {
+            SharedReferenceManager.getInstance(this).setFirstRun(false);
+
             mContentListFragment = ContentListFragment.newInstance(false);
             getSupportFragmentManager().beginTransaction().add(R.id.fl_fragment, mContentListFragment, "content_list").commit();
         } else {

@@ -1,4 +1,12 @@
 apply plugin: 'com.android.application'
+//定义打包时间函数
+def releaseTime() {
+    return new Date().format("yyyyMMddHHmm", TimeZone.getDefault())
+}
+// 将打的包按日期归类
+def releaseDate() {
+    return new Date().format("yyyyMMdd", TimeZone.getDefault())
+}
 
 android {
     compileSdkVersion 24
@@ -10,6 +18,10 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders = [ CHANNEL_NAME:"Google"]
+
+        multiDexEnabled true
     }
 
     // 签名配置
@@ -58,6 +70,42 @@ android {
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    productFlavors {
+        google {
+            manifestPlaceholders = [ CHANNEL_NAME:"GooglePlay"]
+        }
+        yingyongbao {
+            manifestPlaceholders = [ CHANNEL_NAME:"YingYongBao"]
+        }
+        wandoujia {
+            manifestPlaceholders = [ CHANNEL_NAME:"WanDouJia" ]
+        }
+        baidu {
+            manifestPlaceholders = [ CHANNEL_NAME:"BaiDu" ]
+        }
+        xiaomi {
+            manifestPlaceholders = [ CHANNEL_NAME:"XiaoMi" ]
+        }
+        huawei {
+            manifestPlaceholders = [ CHANNEL_NAME:"HuaWei" ]
+        }
+        _360 {
+            manifestPlaceholders = [ CHANNEL_NAME:"360" ]
+        }
+    }
+
+    applicationVariants.all { variant ->
+        def versionName = variant.getVersionName()
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk') && 'release'.equals(variant.buildType.name)) {
+                def fileName = "capture_v${versionName}_${variant.productFlavors[0].name}_${releaseTime()}.apk"
+                def filePath = "${outputFile.parent}\\${releaseDate()}"
+                output.outputFile = new File(filePath, fileName)
+            }
         }
     }
 }
