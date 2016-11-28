@@ -1,6 +1,7 @@
 package com.candy.capture.activity;
 
 import android.os.Bundle;
+import android.support.v7.widget.CardView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -42,6 +43,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
     private LinearLayout mCategoryPhotoLl;
     private LinearLayout mCategoryVideoLl;
 
+    private CardView mLocationCv;
     private LinearLayout mLocationLl;
 
     private DBHelper mDBHelper;
@@ -91,6 +93,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
         mCategoryPhotoLl = (LinearLayout) findViewById(R.id.ll_photo);
         mCategoryVideoLl = (LinearLayout) findViewById(R.id.ll_video);
 
+        mLocationCv = (CardView) findViewById(R.id.cv_location);
         mLocationLl = (LinearLayout) findViewById(R.id.ll_location);
     }
 
@@ -180,6 +183,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
     private void getCities() {
         mCityList = mDBHelper.getAllCity();
         if (mCityList != null && !mCityList.isEmpty()) {
+            mLocationCv.setVisibility(View.VISIBLE);
             mLocationLl.setVisibility(View.VISIBLE);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DensityUtil.dip2px(mContext, 50));
             for (final String city : mCityList) {
@@ -195,6 +199,7 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
                 mLocationLl.addView(view, params);
             }
         } else {
+            mLocationCv.setVisibility(View.GONE);
             mLocationLl.setVisibility(View.GONE);
         }
     }

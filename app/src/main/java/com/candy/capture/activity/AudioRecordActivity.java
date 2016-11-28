@@ -79,18 +79,6 @@ public class AudioRecordActivity extends BaseActivity {
 
     private void initRecorder() {
         mMediaRecorder = new MediaRecorder();
-        mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
-            @Override
-            public void onInfo(MediaRecorder mr, int what, int extra) {
-
-            }
-        });
-        mMediaRecorder.setOnErrorListener(new MediaRecorder.OnErrorListener() {
-            @Override
-            public void onError(MediaRecorder mr, int what, int extra) {
-
-            }
-        });
     }
 
     private void startRecord() {
@@ -133,7 +121,13 @@ public class AudioRecordActivity extends BaseActivity {
         mNoiseLevelSubscriber.interrupt();
         mNoiseLevelSubscriber.isRunning = false;
 
-        mMediaRecorder.stop();
+        try {
+            mMediaRecorder.stop();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         mMediaRecorder.reset();   // You can reuse the object by going back to setAudioSource() step
 
         mNoiseHandler.removeCallbacksAndMessages(null);
