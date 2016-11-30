@@ -1,27 +1,37 @@
 package com.candy.capture.service;
 
+import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
-import android.os.Binder;
+import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 
+import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
+import com.candy.capture.core.ConstantValues;
+import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TipsUtil;
+
+import java.lang.reflect.Field;
 
 public class FloatingWindowService extends Service {
 
     private static final String TAG = "FloatingWindowService";
 
-    public static final String EXTRA_TOOGLE = "extra_toogle";
+    public static final String EXTRA_TOGGLE = "extra_toggle";
 
     WindowManager.LayoutParams wmParams;
     WindowManager mWindowManager;
@@ -30,12 +40,36 @@ public class FloatingWindowService extends Service {
 
     private boolean mIsAdded;
 
+    private Handler mHandler = new Handler();
+
     public FloatingWindowService() {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "onStartCommand " + SharedReferenceManager.getInstance(this).isAllowFastCapture());
+        if (Build.VERSION.SDK_INT < 18) {
+            startForeground(ConstantValues.FLOAT_SERVICE_ID, new Notification());//API < 18 ，此方法能有效隐藏Notification上的图标
+        } else {
+            Intent innerIntent = new Intent(this, GrayInnerService.class);
+            startService(innerIntent);
+            startForeground(ConstantValues.FLOAT_SERVICE_ID, new Notification());
+        }
+
+
+        if (SharedReferenceManager.getInstance(this).isAllowFastCapture()) {
+            addFloatView();
+        } else {
+            removeFloatView();
+        }
+
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
-        boolean openWindow = intent.getBooleanExtra(EXTRA_TOOGLE, true);
+        boolean openWindow = intent.getBooleanExtra(EXTRA_TOGGLE, true);
+        LogUtil.d(TAG, "onBind openWindow--->" + openWindow);
         if (openWindow) {
             addFloatView();
         } else {
@@ -49,8 +83,7 @@ public class FloatingWindowService extends Service {
             return;
         wmParams = new WindowManager.LayoutParams();
         //获取的是WindowManagerImpl.CompatModeWrapper
-        mWindowManager = (WindowManager) getApplication().getSystemService(getApplication().WINDOW_SERVICE);
-        Log.d(TAG, "mWindowManager--->" + mWindowManager);
+        mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         //设置window type
         wmParams.type = WindowManager.LayoutParams.TYPE_TOAST;
         //设置图片格式，效果为背景透明
@@ -67,24 +100,25 @@ public class FloatingWindowService extends Service {
         wmParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
         wmParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
 
-         /*// 设置悬浮窗口长宽数据
-        wmParams.width = 200;
-        wmParams.height = 80;*/
-
-        LayoutInflater inflater = LayoutInflater.from(getApplication());
         //获取浮动窗口视图所在布局
-        mFloatLayout = (RelativeLayout) inflater.inflate(R.layout.floatint_layout, null);
-        //添加mFloatLayout
-        mWindowManager.addView(mFloatLayout, wmParams);
-        mIsAdded = true;
+        mFloatLayout = (RelativeLayout) LayoutInflater.from(getApplicationContext()).inflate(R.layout.floatint_layout, null);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mFloatLayout.getParent() != null) {
+                    LogUtil.d(TAG, "mFloatLayout has parent");
+                    mWindowManager.removeView(mFloatLayout);
+                }
+                mWindowManager.addView(mFloatLayout, wmParams);
+                mIsAdded = true;
+            }
+        });
 
         //浮动窗口按钮
         mHomeBtn = (ImageButton) mFloatLayout.findViewById(R.id.ib_home);
 
         mFloatLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        Log.i(TAG, "Width/2--->" + mHomeBtn.getMeasuredWidth() / 2);
-        Log.i(TAG, "Height/2--->" + mHomeBtn.getMeasuredHeight() / 2);
         //设置监听浮动窗口的触摸移动
         mHomeBtn.setOnTouchListener(new View.OnTouchListener() {
 
@@ -92,12 +126,8 @@ public class FloatingWindowService extends Service {
             public boolean onTouch(View v, MotionEvent event) {
                 //getRawX是触摸位置相对于屏幕的坐标，getX是相对于按钮的坐标
                 wmParams.x = (int) event.getRawX() - mHomeBtn.getMeasuredWidth() / 2;
-                Log.i(TAG, "RawX" + event.getRawX());
-                Log.i(TAG, "X" + event.getX());
                 //减25为状态栏的高度
-                wmParams.y = (int) event.getRawY() - mHomeBtn.getMeasuredHeight() / 2 - 25;
-                Log.i(TAG, "RawY" + event.getRawY());
-                Log.i(TAG, "Y" + event.getY());
+                wmParams.y = (int) event.getRawY() - mHomeBtn.getMeasuredHeight() / 2 - getStatusBarHeight();
                 //刷新
                 mWindowManager.updateViewLayout(mFloatLayout, wmParams);
                 return false;
@@ -108,16 +138,50 @@ public class FloatingWindowService extends Service {
 
             @Override
             public void onClick(View v) {
-                TipsUtil.showToast(FloatingWindowService.this, "Home Btn Click");
+                TipsUtil.showToast(getApplicationContext(), "Home Btn Click");
             }
         });
     }
 
+    /**
+     * 用于获取状态栏的高度。
+     *
+     * @return 返回状态栏高度的像素值。
+     */
+    private int getStatusBarHeight() {
+        int height = 0;
+        try {
+            Class<?> c = Class.forName("com.android.internal.R$dimen");
+            Object o = c.newInstance();
+            Field field = c.getField("status_bar_height");
+            int x = (Integer) field.get(o);
+            height = getResources().getDimensionPixelSize(x);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return height;
+    }
+
     public void removeFloatView() {
-        if (mFloatLayout != null && mIsAdded) {
-            mIsAdded = false;
-            //移除悬浮窗口
-            mWindowManager.removeView(mFloatLayout);
+        if (mIsAdded) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mIsAdded = false;
+                    //移除悬浮窗口
+                    LogUtil.d(TAG, "removeViewImmediate");
+                    mWindowManager.removeViewImmediate(mFloatLayout);
+                }
+            });
+        }
+    }
+
+    public void toggleFloatView(boolean toggle) {
+        LogUtil.d(TAG, "toggleFloatView toggle=" + toggle);
+        if (toggle) {
+            addFloatView();
+        } else {
+            removeFloatView();
         }
     }
 
@@ -127,17 +191,11 @@ public class FloatingWindowService extends Service {
         removeFloatView();
     }
 
-    public void toggleFloatView(boolean toggle) {
-        if (toggle) {
-            addFloatView();
-        } else {
-            removeFloatView();
+    public class InnerBinder extends IFloatAidlInterface.Stub {
+        @Override
+        public void toggleFloatWindow(boolean toggle) throws RemoteException {
+            FloatingWindowService.this.toggleFloatView(toggle);
         }
     }
 
-    public class InnerBinder extends Binder {
-        public FloatingWindowService getService() {
-            return FloatingWindowService.this;
-        }
-    }
 }

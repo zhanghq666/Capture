@@ -12,4 +12,6 @@ public class ConstantValues {
     public static final int CONTENT_TYPE_VIDEO = 0x1000;
 
     public static final String DEFAULT_CITY_NAME = "未知城市";
+
+    public static final int FLOAT_SERVICE_ID = 666;
 }

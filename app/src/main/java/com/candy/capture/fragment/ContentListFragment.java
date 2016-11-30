@@ -29,6 +29,7 @@ import com.candy.capture.customview.ContentListDivider;
 import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.File;
@@ -414,7 +415,7 @@ public class ContentListFragment extends Fragment implements ContentListAdapter.
         if (MediaPlayState.STARTED == mPlayState) {
             percent = (double) mMediaPlayer.getCurrentPosition() / mMediaPlayer.getDuration();
         }
-        Log.d(TAG, "getPlayPercent percent = " + percent);
+        LogUtil.d(TAG, "getPlayPercent percent = " + percent);
         return percent;
     }
 
@@ -434,7 +435,7 @@ public class ContentListFragment extends Fragment implements ContentListAdapter.
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer onError");
+                    LogUtil.e(TAG, "MediaPlayer onError");
                     mPlayState = MediaPlayState.ERROR;
 
                     mp.reset();

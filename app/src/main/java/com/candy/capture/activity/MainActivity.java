@@ -3,52 +3,42 @@ package com.candy.capture.activity;
 import android.Manifest;
 import android.animation.Animator;
 import android.annotation.TargetApi;
-import android.app.Fragment;
 import android.content.ComponentName;
 import android.content.ContentValues;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 
+import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
-import com.candy.capture.adapter.ContentListAdapter;
 import com.candy.capture.core.ConstantValues;
-import com.candy.capture.core.DBHelper;
 import com.candy.capture.core.SharedReferenceManager;
-import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.fragment.ContentListFragment;
-import com.candy.capture.model.MediaPlayState;
+import com.candy.capture.service.FloatingWindowService;
 import com.candy.capture.service.LocationService;
-import com.candy.capture.customview.ContentListDivider;
 import com.candy.capture.model.Content;
 import com.candy.capture.util.DensityUtil;
 import com.candy.capture.util.FileUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends BaseActivity implements ContentListFragment.OnFragmentInteractionListener {
@@ -167,26 +157,32 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         }
     }
 
-    private ServiceConnection conn = new ServiceConnection() {
+    private boolean mLocationBound;
+    private ServiceConnection connLocation = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-
+            mLocationBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
+            mLocationBound = false;
         }
     };
 
     private void startLocationService() {
         Intent intent = new Intent(mContext, LocationService.class);
-        bindService(intent, conn, BIND_AUTO_CREATE);
+        bindService(intent, connLocation, BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onDestroy() {
-        unbindService(conn);
+        if (mLocationBound) {
+            unbindService(connLocation);
+        }
+        if (mFloatBound) {
+            unbindService(connFloat);
+        }
         super.onDestroy();
     }
 
@@ -449,12 +445,42 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             return true;
         } else if (id == R.id.action_fast_capture) {
             item.setChecked(!item.isChecked());
-            SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
 
+            SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
+            toggleFloatWindow(item.isChecked());
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean mFloatBound;
+    ServiceConnection connFloat = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mFloatBound = true;
+            myAidlInterface = IFloatAidlInterface.Stub.asInterface(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mFloatBound = false;
+        }
+    };
+    IFloatAidlInterface myAidlInterface;
+
+    private void toggleFloatWindow(boolean toggle) {
+        if (myAidlInterface == null) {
+            Intent intent = new Intent(this, FloatingWindowService.class);
+            intent.putExtra(FloatingWindowService.EXTRA_TOGGLE, toggle);
+            bindService(intent, connFloat, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT);
+        } else {
+            try {
+                myAidlInterface.toggleFloatWindow(toggle);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     //endregion

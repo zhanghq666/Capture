@@ -71,7 +71,7 @@ public class CommonTools {
         ConnectivityManager connectivity = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivity == null) {
-            Log.e("CommonTools", "couldn't get connectivity manager");
+            LogUtil.e("CommonTools", "couldn't get connectivity manager");
         } else {
             NetworkInfo[] info = connectivity.getAllNetworkInfo();
             if (info != null) {
@@ -92,7 +92,7 @@ public class CommonTools {
         ConnectivityManager connectivity = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivity == null) {
-            // Log.w(Constants.TAG, "couldn't get connectivity manager");
+            // LogUtil.w(Constants.TAG, "couldn't get connectivity manager");
         } else {
             NetworkInfo info = connectivity.getActiveNetworkInfo();
             if (info != null && info.getType() == ConnectivityManager.TYPE_MOBILE) {
@@ -106,7 +106,7 @@ public class CommonTools {
         ConnectivityManager connectivity = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivity == null) {
-            // Log.w(Constants.TAG, "couldn't get connectivity manager");
+            // LogUtil.w(Constants.TAG, "couldn't get connectivity manager");
         } else {
             NetworkInfo info = connectivity.getActiveNetworkInfo();
             if (info != null && info.getType() == ConnectivityManager.TYPE_WIFI) {

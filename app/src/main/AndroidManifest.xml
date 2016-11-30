@@ -94,9 +94,23 @@
         <service
             android:name=".service.FloatingWindowService"
             android:enabled="true"
-            android:process=":remoteF"
-            android:exported="false">
+            android:exported="false"
+            android:process=":float">
         </service>
+        <service android:name=".service.GrayInnerService"
+                 android:enabled="true"
+                 android:exported="false"/>
+
+        <receiver
+            android:name=".receiver.CaptureReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -19,7 +19,7 @@ public class SharedReferenceManager {
         if (instance == null) {
             synchronized (SharedReferenceManager.class) {
                 if (instance == null) {
-                    instance = new SharedReferenceManager(context);
+                    instance = new SharedReferenceManager(context.getApplicationContext());
                 }
             }
         }
@@ -50,9 +50,11 @@ public class SharedReferenceManager {
     }
 
     public void setLocationCity(String locationCity) {
-        if (!mLocationCity.equals(locationCity)) {
-            mLocationCity = locationCity;
-            mSharedPreferences.edit().putString(KEY_LOCATION_CITY, mLocationCity).apply();
+        synchronized (SharedReferenceManager.class) {
+            if (!mLocationCity.equals(locationCity)) {
+                mLocationCity = locationCity;
+                mSharedPreferences.edit().putString(KEY_LOCATION_CITY, mLocationCity).apply();
+            }
         }
     }
 
@@ -61,8 +63,10 @@ public class SharedReferenceManager {
     }
 
     public void setAllowFastCapture(boolean allowFastCapture) {
-        mAllowFastCapture = allowFastCapture;
-        mSharedPreferences.edit().putBoolean(KEY_FAST_CAPTURE, mAllowFastCapture).apply();
+        synchronized (SharedReferenceManager.class) {
+            mAllowFastCapture = allowFastCapture;
+            mSharedPreferences.edit().putBoolean(KEY_FAST_CAPTURE, mAllowFastCapture).apply();
+        }
     }
 
     public boolean isFirstRun() {
@@ -70,7 +74,9 @@ public class SharedReferenceManager {
     }
 
     public void setFirstRun(boolean firstRun) {
-        mIsFirstRun = firstRun;
-        mSharedPreferences.edit().putBoolean(KEY_IS_FIRST_RUN, mIsFirstRun).apply();
+        synchronized (SharedReferenceManager.class) {
+            mIsFirstRun = firstRun;
+            mSharedPreferences.edit().putBoolean(KEY_IS_FIRST_RUN, mIsFirstRun).apply();
+        }
     }
 }

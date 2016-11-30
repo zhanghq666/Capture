@@ -24,6 +24,7 @@ import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.util.GlideImageLoader;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TimeUtil;
 import com.candy.capture.util.TipsUtil;
 
@@ -140,7 +141,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer onError");
+                    LogUtil.e(TAG, "MediaPlayer onError");
                     mPlayState = MediaPlayState.ERROR;
 
                     mp.reset();

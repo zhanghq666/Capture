@@ -28,6 +28,7 @@ import android.widget.TextView;
 import com.candy.capture.R;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.util.DensityUtil;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TimeUtil;
 import com.candy.capture.util.TipsUtil;
 
@@ -202,7 +203,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         mSurfaceTv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                Log.d(TAG, "onSurfaceTextureAvailable");
+                LogUtil.d(TAG, "onSurfaceTextureAvailable");
                 if (mMediaPlayer == null || mPlayState == MediaPlayState.IDLE) {
                     initMediaPlayer();
                 }
@@ -212,12 +213,12 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
 
             @Override
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-                Log.d(TAG, "onSurfaceTextureSizeChanged width = " + width + " height = " + height);
+                LogUtil.d(TAG, "onSurfaceTextureSizeChanged width = " + width + " height = " + height);
             }
 
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                Log.d(TAG, "onSurfaceTextureDestroyed");
+                LogUtil.d(TAG, "onSurfaceTextureDestroyed");
                 releaseMedia();
                 return true;
             }
@@ -346,7 +347,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
 
 
     private void initMediaPlayer() {
-        Log.d(TAG, "initMediaPlayer");
+        LogUtil.d(TAG, "initMediaPlayer");
         if (mMediaPlayer == null) {
             mMediaPlayer = new MediaPlayer();
             mPlayState = MediaPlayState.IDLE;
@@ -369,7 +370,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
             mMediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
                 @Override
                 public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
-                    Log.d(TAG, "MediaPlayer onVideoSizeChanged width = " + width + " height = " + height);
+                    LogUtil.d(TAG, "MediaPlayer onVideoSizeChanged width = " + width + " height = " + height);
 
                     mCurrentProgressTv.setText(TimeUtil.formatDuration(0));
                     mDurationTv.setText(TimeUtil.formatDuration(mMediaPlayer.getDuration() / 1000));
@@ -382,13 +383,13 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
             mMediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
                 @Override
                 public void onSeekComplete(MediaPlayer mp) {
-                    Log.d(TAG, "MediaPlayer onSeekComplete ");
+                    LogUtil.d(TAG, "MediaPlayer onSeekComplete ");
                 }
             });
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer onError");
+                    LogUtil.e(TAG, "MediaPlayer onError");
                     mPlayState = MediaPlayState.ERROR;
 
                     mp.reset();
@@ -408,7 +409,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         super.onConfigurationChanged(newConfig);
         // 这个方法很重要
         Point point = DensityUtil.getScreenRealSize(this);
-        Log.d(TAG, "onConfigurationChanged size = " + point);
+        LogUtil.d(TAG, "onConfigurationChanged size = " + point);
 
         if (mMediaPlayer.getVideoWidth() > 0 && mMediaPlayer.getVideoHeight() > 0) {
             configSurfaceSize(mMediaPlayer.getVideoWidth(), mMediaPlayer.getVideoHeight());
@@ -428,7 +429,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         } else {
             layoutParams.width = screenWidth;
             layoutParams.height = (int) (((double) screenWidth / width) * height);
-            Log.d(TAG, "onConfigurationChanged width = " + layoutParams.width + " height = " + layoutParams.height);
+            LogUtil.d(TAG, "onConfigurationChanged width = " + layoutParams.width + " height = " + layoutParams.height);
         }
     }
 

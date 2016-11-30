@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.candy.capture.model.Content;
+import com.candy.capture.util.LogUtil;
 
 import java.util.ArrayList;
 
@@ -242,7 +243,7 @@ public class DBHelper extends SQLiteOpenHelper {
             }
             whereCase += CONTENT_COLUMN_DESC + " like '%" + key + "%'";
         }
-        Log.d("searchByDesc", "whereCase = " + whereCase);
+        LogUtil.d("searchByDesc", "whereCase = " + whereCase);
         SQLiteDatabase database = getReadableDatabase();
         Cursor cursor = database.rawQuery("select * from " + CONTENT_TABLE_NAME +
                         " where " + whereCase +
