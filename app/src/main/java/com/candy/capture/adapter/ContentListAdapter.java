@@ -1,18 +1,26 @@
 package com.candy.capture.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
+import android.provider.MediaStore;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.TimeUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.candy.capture.R;
+import com.candy.capture.activity.MainActivity;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.customview.AudioView;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
+import com.candy.capture.util.GlideImageLoader;
 import com.candy.capture.util.TimeUtil;
 
 import java.util.ArrayList;
@@ -25,17 +33,20 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
     private Context mContext;
     private ArrayList<Content> mContents;
     private ItemClickCallback mItemClickCallback;
+    private AudioPlayCallBack mAudioPlayCallBack;
     private boolean mIsEditMode;
 
-    public ContentListAdapter(Context context, ItemClickCallback callback) {
+    public ContentListAdapter(Context context, ArrayList<Content> contents, AudioPlayCallBack audioPlayCallBack, ItemClickCallback callback) {
         mContext = context;
+        mContents = contents;
+        mAudioPlayCallBack = audioPlayCallBack;
         mItemClickCallback = callback;
     }
 
-    public void setContents(ArrayList<Content> contents) {
-        mContents = contents;
-        notifyDataSetChanged();
-    }
+//    public void setContents(ArrayList<Content> contents) {
+//        mContents = contents;
+//        notifyDataSetChanged();
+//    }
 
 //    public void appendContentsEnd(ArrayList<Content> contents) {
 //        if (mContents == null) {
@@ -79,7 +90,12 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
             case ConstantValues.CONTENT_TYPE_AUDIO:
                 holder = new AudioViewHolder(View.inflate(mContext, R.layout.item_audio, null));
                 break;
-
+            case ConstantValues.CONTENT_TYPE_PHOTO:
+                holder = new ImageViewHolder(View.inflate(mContext, R.layout.item_image, null));
+                break;
+            case ConstantValues.CONTENT_TYPE_VIDEO:
+                holder = new VideoViewHolder(View.inflate(mContext, R.layout.item_video, null));
+                break;
         }
         return holder;
     }
@@ -106,18 +122,52 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
         });
         holder.mCheckBox.setVisibility(mIsEditMode ? View.VISIBLE : View.GONE);
         holder.mCheckBox.setChecked(content.isSelect());
+        holder.mDescTv.setText(content.getDesc());
 
-        if (holder instanceof TextViewHolder) {
-            TextViewHolder viewHolder = (TextViewHolder) holder;
-            viewHolder.mDescTv.setText(content.getDesc());
-        } else if (holder instanceof AudioViewHolder) {
+        if (holder instanceof AudioViewHolder) {
             final AudioViewHolder viewHolder = (AudioViewHolder) holder;
-            viewHolder.mDescTv.setText(content.getDesc());
             viewHolder.mDurationTv.setText(TimeUtil.formatDuration(content.getMediaDuration()));
             viewHolder.mAudioView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    viewHolder.mAudioView.startAnimation();
+                    if (mItemClickCallback != null) {
+                        mItemClickCallback.onAudioViewClick(position);
+                    }
+                }
+            });
+            viewHolder.mAudioView.setDuration(content.getMediaDuration());
+            if (content.isPlayingAudio()) {
+                if (mAudioPlayCallBack != null) {
+                    double percent = mAudioPlayCallBack.getPlayPercent();
+                    if (percent < 0) {
+                        viewHolder.mAudioView.stopAnimation();
+                    } else {
+                        viewHolder.mAudioView.startAnimation(percent);
+                    }
+                }
+            } else {
+                viewHolder.mAudioView.stopAnimation();
+            }
+        } else if (holder instanceof ImageViewHolder) {
+            ImageViewHolder viewHolder = (ImageViewHolder) holder;
+            viewHolder.mImageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mItemClickCallback != null) {
+                        mItemClickCallback.onImageViewClick(position);
+                    }
+                }
+            });
+            GlideImageLoader.getInstance().loadImage(mContext, content.getMediaFilePath(), viewHolder.mImageView);
+        } else if (holder instanceof VideoViewHolder) {
+            VideoViewHolder viewHolder = (VideoViewHolder) holder;
+            GlideImageLoader.getInstance().loadVideoThumbnail(mContext, content.getMediaFilePath(), viewHolder.mImageView);
+            viewHolder.mPlaybackMask.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mItemClickCallback != null) {
+                        mItemClickCallback.onVideoViewClick(position);
+                    }
                 }
             });
         }
@@ -161,9 +211,41 @@ public class ContentListAdapter extends RecyclerView.Adapter<ContentListAdapter.
         }
     }
 
+    class ImageViewHolder extends BaseViewHolder {
+        private ImageView mImageView;
+
+        public ImageViewHolder(View itemView) {
+            super(itemView);
+
+            mImageView = (ImageView) itemView.findViewById(R.id.image_view);
+        }
+    }
+
+    class VideoViewHolder extends BaseViewHolder {
+        private ImageView mImageView;
+        private ImageView mPlaybackMask;
+
+        public VideoViewHolder(View itemView) {
+            super(itemView);
+
+            mImageView = (ImageView) itemView.findViewById(R.id.image_view);
+            mPlaybackMask = (ImageView) itemView.findViewById(R.id.iv_playback_mask);
+        }
+    }
+
     public interface ItemClickCallback {
         void onItemClick(int position);
 
         void onItemLongPressed(int position);
+
+        void onAudioViewClick(int position);
+
+        void onImageViewClick(int position);
+
+        void onVideoViewClick(int position);
+    }
+
+    public interface AudioPlayCallBack {
+        double getPlayPercent();
     }
 }

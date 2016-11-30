@@ -1,5 +1,6 @@
 package com.candy.capture.activity;
 
+import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -19,12 +20,16 @@ import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
 import com.candy.capture.core.SharedReferenceManager;
 import com.candy.capture.customview.AudioView;
+import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
+import com.candy.capture.util.GlideImageLoader;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TimeUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class PublishActivity extends BaseActivity implements View.OnClickListener {
@@ -42,6 +47,10 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
 
     private ViewStub mPhotoStub;
     private ImageView mImageView;
+
+    private ViewStub mVideoStub;
+    private ImageView mVideoCoverView;
+    private ImageView mVideoPlaybackMask;
 
     private int mType;
     private Content mContent;
@@ -76,6 +85,8 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
     private void findView() {
         mDescEt = (EditText) findViewById(R.id.et_desc);
         mAudioStub = (ViewStub) findViewById(R.id.stub_audio);
+        mPhotoStub = (ViewStub) findViewById(R.id.stub_photo);
+        mVideoStub = (ViewStub) findViewById(R.id.stub_video);
     }
 
     private void setView() {
@@ -89,8 +100,19 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
                 mAudioDurationTv.setText(TimeUtil.formatDuration(mContent.getMediaDuration()));
                 break;
             case ConstantValues.CONTENT_TYPE_PHOTO:
+                mPhotoStub.inflate();
+                mImageView = (ImageView) findViewById(R.id.image_view);
+                mImageView.setOnClickListener(this);
+                GlideImageLoader.getInstance().loadImage(mContext, mContent.getMediaFilePath(), mImageView);
                 break;
             case ConstantValues.CONTENT_TYPE_VIDEO:
+                mVideoStub.inflate();
+                mVideoCoverView = (ImageView) findViewById(R.id.image_view);
+                mVideoPlaybackMask = (ImageView) findViewById(R.id.iv_playback_mask);
+                mVideoPlaybackMask.setOnClickListener(this);
+//                Bitmap bitmap = ThumbnailUtils.createVideoThumbnail(mContent.getMediaFilePath(), MediaStore.Video.Thumbnails.MICRO_KIND);
+//                mVideoCoverView.setImageBitmap(bitmap);
+                GlideImageLoader.getInstance().loadVideoThumbnail(this, mContent.getMediaFilePath(), mVideoCoverView);
                 break;
         }
     }
@@ -119,7 +141,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
             mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer onError");
+                    LogUtil.e(TAG, "MediaPlayer onError");
                     mPlayState = MediaPlayState.ERROR;
 
                     mp.reset();
@@ -155,12 +177,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
     @Override
     protected void onPause() {
         super.onPause();
-        if (mMediaPlayer != null) {
-            if (mMediaPlayer.isPlaying()) {
-                mMediaPlayer.stop();
-            }
-            mMediaPlayer.release();
-        }
+        releaseMedia();
     }
 
     @Override
@@ -173,7 +190,6 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_ok) {
             if (TextUtils.isEmpty(mDescEt.getText().toString().trim())) {
                 TipsUtil.showToast(mContext, "说点什么再保存吧");
@@ -199,7 +215,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
 
         if (mContent == null) {
             mContent = new Content();
-            mContent.setType(ConstantValues.CONTENT_TYPE_TEXT);
+            mContent.setType(mType);
         }
         mContent.setDesc(mDescEt.getText().toString().trim());
         mContent.setCityName(SharedReferenceManager.getInstance(mContext).getLocationCity());
@@ -220,6 +236,16 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
                     playMedia();
                 }
                 break;
+            case R.id.image_view:
+                ArrayList<String> list = new ArrayList<>();
+                list.add(mContent.getMediaFilePath());
+                ImageViewerDialog.showDialog(this, list, 1);
+                break;
+            case R.id.iv_playback_mask:
+                Intent intent = new Intent(this, VideoPlayerActivity.class);
+                intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContent.getMediaFilePath());
+                startActivity(intent);
+                break;
         }
     }
 
@@ -238,6 +264,17 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
 
         if (mAudioView != null) {
             mAudioView.stopAnimation();
+        }
+    }
+
+    private void releaseMedia() {
+        if (mMediaPlayer != null) {
+            if (MediaPlayState.STARTED == mPlayState) {
+                stopMedia();
+            }
+            mMediaPlayer.release();
+            mPlayState = MediaPlayState.END;
+            mMediaPlayer = null;
         }
     }
 }

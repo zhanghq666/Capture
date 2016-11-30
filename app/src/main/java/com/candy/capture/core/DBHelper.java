@@ -6,10 +6,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.candy.capture.model.Content;
+import com.candy.capture.util.LogUtil;
 
 import java.util.ArrayList;
+
+import static com.candy.capture.core.DBHelper.CONTENT_COLUMN_CITY_NAME;
 
 /**
  * Created by zhanghq on 2016/10/19.
@@ -62,6 +66,7 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
+    //region 内容相关
     private void createContentTable(SQLiteDatabase db) {
         db.execSQL("DROP TABLE IF EXISTS " + "content");
         db.execSQL("CREATE TABLE " + CONTENT_TABLE_NAME + " (" +
@@ -76,28 +81,13 @@ public class DBHelper extends SQLiteOpenHelper {
                 ");");
     }
 
-    private void createCityTable(SQLiteDatabase db) {
-        db.execSQL("DROP TABLE IF EXISTS " + CITY_TABLE_NAME);
-        db.execSQL("CREATE TABLE " + CITY_TABLE_NAME + " (" +
-                CITY_COLUMN_CITY_NAME + " TEXT PRIMARY KEY," +
-                CITY_COLUMN_CONTENT_COUNT + " INTEGER" +
-                ");");
-    }
-
-    private void createSearchHistoryTable(SQLiteDatabase db) {
-        db.execSQL("DROP TABLE IF EXISTS " + SEARCH_HISTORY_TABLE_NAME);
-        db.execSQL("CREATE TABLE " + SEARCH_HISTORY_TABLE_NAME + " (" +
-                SEARCH_HISTORY_COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                SEARCH_HISTORY_COLUMN_WORD + " TEXT"
-                + ");");
-    }
-
     public boolean insertContent(Content content) {
         if (content == null) {
             return false;
         }
         SQLiteDatabase database = getWritableDatabase();
         database.beginTransaction();
+        long rowId;
         try {
             incrementCity(content.getCityName(), database);
 
@@ -108,7 +98,7 @@ public class DBHelper extends SQLiteOpenHelper {
             contentValues.put(CONTENT_COLUMN_FILE_PATH, content.getMediaFilePath());
             contentValues.put(CONTENT_COLUMN_MEDIA_DURATION, content.getMediaDuration());
             contentValues.put(CONTENT_COLUMN_RELEASE_TIME, content.getReleaseTime());
-            database.insert(CONTENT_TABLE_NAME, null, contentValues);
+            rowId = database.insert(CONTENT_TABLE_NAME, null, contentValues);
 
             database.setTransactionSuccessful();
         } catch (Exception ex) {
@@ -117,7 +107,7 @@ public class DBHelper extends SQLiteOpenHelper {
         } finally {
             database.endTransaction();
         }
-        return true;
+        return rowId != -1;
     }
 
     public ArrayList<Content> getContentOlder(int startId, int count) {
@@ -211,6 +201,71 @@ public class DBHelper extends SQLiteOpenHelper {
         return true;
     }
 
+    public ArrayList<Content> searchByCity(String city, int count) {
+        SQLiteDatabase database = getReadableDatabase();
+        Cursor cursor = database.query(CONTENT_TABLE_NAME, null,
+                CONTENT_COLUMN_CITY_NAME + "=?", new String[]{city},
+                null, null, CONTENT_COLUMN_ID + " DESC", String.valueOf(count));
+//        Cursor cursor = database.rawQuery("select * from " + CONTENT_TABLE_NAME +
+//                        " where " + CONTENT_COLUMN_CITY_NAME + "=" + city +
+//                        " order by " + CONTENT_COLUMN_ID + " desc" +
+//                        " limit " + count + ";",
+//                new String[]{});
+        ArrayList<Content> contents = new ArrayList<>();
+        fitContents(cursor, contents);
+
+        return contents;
+    }
+
+    public ArrayList<Content> searchByType(int type, int count) {
+        SQLiteDatabase database = getReadableDatabase();
+        Cursor cursor = database.rawQuery("select * from " + CONTENT_TABLE_NAME +
+                        " where " + CONTENT_COLUMN_TYPE + "=" + type +
+                        " order by " + CONTENT_COLUMN_ID + " desc" +
+                        " limit " + count + ";",
+                new String[]{});
+        ArrayList<Content> contents = new ArrayList<>();
+        fitContents(cursor, contents);
+
+        return contents;
+    }
+
+    public ArrayList<Content> searchByDesc(String keyword, int count) {
+        if (TextUtils.isEmpty(keyword) || TextUtils.isEmpty(keyword.trim()))
+            return null;
+//        String key = keyword.trim().replace("[", "[[]").replace("_", "[_]").replace("%", "[%]");//.replaceAll("\\s+", " ");
+        String[] keys = keyword.trim().replace("[", "[[]").replace("_", "[_]").replace("%", "[%]").split("\\s+");
+        String whereCase = "";
+        for (int i = 0; i < keys.length; i++) {
+            String key = keys[i];
+            if (i > 0) {
+                whereCase += " and ";
+            }
+            whereCase += CONTENT_COLUMN_DESC + " like '%" + key + "%'";
+        }
+        LogUtil.d("searchByDesc", "whereCase = " + whereCase);
+        SQLiteDatabase database = getReadableDatabase();
+        Cursor cursor = database.rawQuery("select * from " + CONTENT_TABLE_NAME +
+                        " where " + whereCase +
+                        " order by " + CONTENT_COLUMN_ID + " desc" +
+                        " limit " + count + ";",
+                new String[]{});
+        ArrayList<Content> contents = new ArrayList<>();
+        fitContents(cursor, contents);
+
+        return contents;
+    }
+    //endregion
+
+    //region 城市相关
+    private void createCityTable(SQLiteDatabase db) {
+        db.execSQL("DROP TABLE IF EXISTS " + CITY_TABLE_NAME);
+        db.execSQL("CREATE TABLE " + CITY_TABLE_NAME + " (" +
+                CITY_COLUMN_CITY_NAME + " TEXT PRIMARY KEY," +
+                CITY_COLUMN_CONTENT_COUNT + " INTEGER" +
+                ");");
+    }
+
     private void incrementCity(String cityName, SQLiteDatabase database) {
         if (TextUtils.isEmpty(cityName))
             return;
@@ -270,4 +325,54 @@ public class DBHelper extends SQLiteOpenHelper {
             cursor.close();
         }
     }
+    //endregion
+
+    //region 搜索历史
+    private void createSearchHistoryTable(SQLiteDatabase db) {
+        db.execSQL("DROP TABLE IF EXISTS " + SEARCH_HISTORY_TABLE_NAME);
+        db.execSQL("CREATE TABLE " + SEARCH_HISTORY_TABLE_NAME + " (" +
+                SEARCH_HISTORY_COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                SEARCH_HISTORY_COLUMN_WORD + " TEXT"
+                + ");");
+    }
+
+    public boolean insertSearchHistory(String keyword) {
+        if (TextUtils.isEmpty(keyword) || TextUtils.isEmpty(keyword.trim())) {
+            return false;
+        }
+        SQLiteDatabase database = getWritableDatabase();
+
+        database.delete(SEARCH_HISTORY_TABLE_NAME, SEARCH_HISTORY_COLUMN_WORD + "=?", new String[]{String.valueOf(keyword)});
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(SEARCH_HISTORY_COLUMN_WORD, keyword);
+        long rowId = database.insert(SEARCH_HISTORY_TABLE_NAME, null, contentValues);
+
+        return rowId != -1;
+    }
+
+    public ArrayList<String> getSearchHistory() {
+        ArrayList<String> keywordList = new ArrayList<>();
+        SQLiteDatabase database = getWritableDatabase();
+        Cursor cursor = database.query(SEARCH_HISTORY_TABLE_NAME, null, null, null, null, null, SEARCH_HISTORY_COLUMN_ID + " desc", "4");
+        int id = -1;
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                do {
+                    String keyword = cursor.getString(cursor.getColumnIndex(SEARCH_HISTORY_COLUMN_WORD));
+                    id = cursor.getInt(cursor.getColumnIndex(SEARCH_HISTORY_COLUMN_ID));
+                    keywordList.add(keyword);
+                } while (cursor.moveToNext());
+            }
+
+            cursor.close();
+        }
+
+        if (keywordList.size() >= 4) {
+            database.delete(SEARCH_HISTORY_TABLE_NAME, SEARCH_HISTORY_COLUMN_ID + "<?", new String[]{String.valueOf(id)});
+        }
+
+        return keywordList;
+    }
+    //endregion
 }

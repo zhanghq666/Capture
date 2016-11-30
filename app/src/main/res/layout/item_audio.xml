@@ -29,6 +29,10 @@
             android:textColor="@color/colorTextPrimary"
             android:textSize="16sp"/>
 
-        <include layout="@layout/viewstub_audio_view"/>
+        <include
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            layout="@layout/viewstub_audio_view"
+            android:layout_below="@id/tv_desc"/>
     </RelativeLayout>
 </RelativeLayout>

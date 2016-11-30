@@ -9,10 +9,49 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@color/colorBackground"
     tools:context="com.candy.capture.activity.SplashActivity">
 
-    <TextView
+    <ImageView
+        android:id="@+id/iv_capture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="This is Splash"/>
+        android:layout_centerInParent="true"
+        android:layout_marginTop="100dp"
+        android:layout_marginBottom="40dp"
+        android:src="@mipmap/ic_splash_1"/>
+
+    <ImageView
+        android:id="@+id/iv_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/iv_capture"
+        android:layout_centerHorizontal="true"
+        android:src="@mipmap/ic_splash_name"/>
+
+    <ImageView
+        android:id="@+id/iv_action1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_capture"
+        android:layout_centerHorizontal="true"
+        android:src="@mipmap/ic_splash_2"/>
+
+    <ImageView
+        android:id="@+id/iv_action2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_capture"
+        android:layout_centerHorizontal="true"
+        android:src="@mipmap/ic_splash_3"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/iv_action3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_capture"
+        android:layout_centerHorizontal="true"
+        android:src="@mipmap/ic_splash_4"
+        android:visibility="gone"/>
 </RelativeLayout>

@@ -4,55 +4,54 @@ import android.Manifest;
 import android.animation.Animator;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
-import android.content.DialogInterface;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteException;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 
+import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
-import com.candy.capture.adapter.ContentListAdapter;
-import com.candy.capture.core.DBHelper;
-import com.candy.capture.model.MediaPlayState;
+import com.candy.capture.core.ConstantValues;
+import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.fragment.ContentListFragment;
+import com.candy.capture.service.FloatingWindowService;
 import com.candy.capture.service.LocationService;
-import com.candy.capture.customview.ContentListDivider;
 import com.candy.capture.model.Content;
 import com.candy.capture.util.DensityUtil;
+import com.candy.capture.util.FileUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
-public class MainActivity extends BaseActivity implements ContentListAdapter.ItemClickCallback {
+public class MainActivity extends BaseActivity implements ContentListFragment.OnFragmentInteractionListener {
 
     private static final String TAG = "MainActivity";
+
     private final int WHOLE_PERMISSION_REQUEST = 1;
     private final int AUDIO_PERMISSION_REQUEST = 2;
     private final int VIDEO_PERMISSION_REQUEST = 3;
 
     private final int REQ_CODE_ADD_CONTENT = 1;
-
-    private DBHelper mDBHelper;
-    private static final int COUNT = 20;
+    private final int REQ_CODE_TAKE_PICTURE = 2;
+    private final int REQ_CODE_VIDEO_CAPTURE = 3;
 
     private CoordinatorLayout mRootCl;
     private FloatingActionButton mAddContentFab;
@@ -60,19 +59,23 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     private FloatingActionButton mAddAudioFab;
     private FloatingActionButton mAddPhotoFab;
     private FloatingActionButton mAddVideoFab;
+
+    private ContentListFragment mContentListFragment;
+    /**
+     * 控制FloatingActionButton动画收回的透明View
+     */
     private View mMaskView;
 
-    private RecyclerView mContentsRv;
-
+    /**
+     * 标识添加内容是否处于展开状态
+     */
     private boolean mIsAddButtonPressed;
+    /**
+     * 标识是否处于编辑模式
+     */
     private boolean mIsInEditMode;
 
-    private ArrayList<Content> mContentList;
-    private ArrayList<Content> mSelectedContents;
-    private ContentListAdapter mContentListAdapter;
-
-    private MediaPlayer mMediaPlayer;
-    private MediaPlayState mPlayState;
+    private String mCameraFilePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,11 +94,18 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
 
         findView();
         setView();
-        mDBHelper = new DBHelper(this);
 
         startLocation();
         getWholePermissions();
-        getContents();
+
+        if (savedInstanceState == null) {
+            SharedReferenceManager.getInstance(this).setFirstRun(false);
+
+            mContentListFragment = ContentListFragment.newInstance(false);
+            getSupportFragmentManager().beginTransaction().add(R.id.fl_fragment, mContentListFragment, "content_list").commit();
+        } else {
+            mContentListFragment = (ContentListFragment) getSupportFragmentManager().findFragmentByTag("content_list");
+        }
     }
 
     private void findView() {
@@ -106,8 +116,6 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         mAddPhotoFab = (FloatingActionButton) findViewById(R.id.fab_add_photo);
         mAddVideoFab = (FloatingActionButton) findViewById(R.id.fab_add_video);
         mMaskView = findViewById(R.id.mask_view);
-
-        mContentsRv = (RecyclerView) findViewById(R.id.rv_contents);
     }
 
     private void setView() {
@@ -121,10 +129,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             @Override
             public void onClick(View view) {
                 if (!mIsAddButtonPressed) {
-                    mIsAddButtonPressed = true;
                     showInAnimation();
                 } else {
-                    mIsAddButtonPressed = false;
                     showOutAnimation();
                 }
             }
@@ -133,15 +139,10 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         mAddAudioFab.setOnClickListener(mAddContentClickListener);
         mAddPhotoFab.setOnClickListener(mAddContentClickListener);
         mAddVideoFab.setOnClickListener(mAddContentClickListener);
-
-        mContentListAdapter = new ContentListAdapter(mContext, this);
-        mContentsRv.setAdapter(mContentListAdapter);
-        mContentsRv.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
-        mContentsRv.addItemDecoration(new ContentListDivider(mContext));
     }
 
 
-
+    //region 定位
     @TargetApi(Build.VERSION_CODES.M)
     private void startLocation() {
         // 权限未拿到时从Main去请求权限、启动定位Service，拿到以后从Splash启动
@@ -156,21 +157,36 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         }
     }
 
+    private boolean mLocationBound;
+    private ServiceConnection connLocation = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mLocationBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mLocationBound = false;
+        }
+    };
+
     private void startLocationService() {
-        ServiceConnection conn = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-
-            }
-        };
         Intent intent = new Intent(mContext, LocationService.class);
-        bindService(intent, conn, BIND_AUTO_CREATE);
+        bindService(intent, connLocation, BIND_AUTO_CREATE);
     }
+
+    @Override
+    protected void onDestroy() {
+        if (mLocationBound) {
+            unbindService(connLocation);
+        }
+        if (mFloatBound) {
+            unbindService(connFloat);
+        }
+        super.onDestroy();
+    }
+
+    //endregion
 
     //region 权限相关
     @TargetApi(Build.VERSION_CODES.M)
@@ -196,7 +212,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             // 读写权限
             addPermission(permissions, Manifest.permission.WRITE_EXTERNAL_STORAGE);
             // 读取电话状态权限
-//            addPermission(permissions, Manifest.permission.READ_PHONE_STATE);
+            addPermission(permissions, Manifest.permission.READ_PHONE_STATE);
             // 摄像头权限
             addPermission(permissions, Manifest.permission.CAMERA);
             // 录音权限
@@ -235,8 +251,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         boolean result = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ArrayList<String> permissions = new ArrayList<String>();
-			/*
-			 * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
+            /*
+             * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
 			 */
             // 读写权限
             addPermission(permissions, Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -314,7 +330,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                             }
                         });
                     } else {
-                        //TODO: goto camera record page
+                        gotoVideoRecord();
                     }
                     break;
             }
@@ -324,6 +340,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
 
     //region FloatingActionButton动画
     private void showOutAnimation() {
+        mIsAddButtonPressed = false;
+
         mMaskView.setVisibility(View.GONE);
         mAddContentFab.animate().rotation(0).scaleX(1).scaleY(1).setDuration(200).setListener(new Animator.AnimatorListener() {
             @Override
@@ -353,6 +371,8 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     }
 
     private void showInAnimation() {
+        mIsAddButtonPressed = true;
+
         mMaskView.setVisibility(View.VISIBLE);
         int radius = DensityUtil.dip2px(mContext, 150);
         mAddContentFab.animate().rotation(45).scaleX((float) 0.8).scaleY((float) 0.8).setDuration(200).setListener(new Animator.AnimatorListener() {
@@ -393,34 +413,6 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     }
     //endregion
 
-    //region 获取内容
-    private void getNewerContents() {
-        if (mContentList == null || mContentList.isEmpty()) {
-            mContentList = mDBHelper.getContentNewer(-1, COUNT);
-            mContentListAdapter.setContents(mContentList);
-        } else {
-            ArrayList contents = mDBHelper.getContentNewer(mContentList.get(0).getId(), COUNT);
-            mContentList.addAll(0, contents);
-            int count = contents.size();
-            mContentListAdapter.notifyItemRangeInserted(0, count);
-        }
-    }
-
-    private void getContents() {
-        if (mContentList == null || mContentList.isEmpty()) {
-            mContentList = mDBHelper.getContentOlder(-1, COUNT);
-            mContentListAdapter.setContents(mContentList);
-        } else {
-            ArrayList contents = mDBHelper.getContentOlder(mContentList.get(mContentList.size() - 1).getId(), COUNT);
-            mContentList.addAll(contents);
-            int startPosition = mContentList.size() - 1;
-            int count = contents.size();
-            mContentList.addAll(contents);
-            mContentListAdapter.notifyItemRangeInserted(startPosition, count);
-        }
-    }
-    //endregion
-
     //region 菜单控制
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -432,6 +424,7 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
             menu.findItem(R.id.action_search).setVisible(true);
             menu.findItem(R.id.action_delete).setVisible(false);
         }
+        menu.findItem(R.id.action_fast_capture).setChecked(SharedReferenceManager.getInstance(this).isAllowFastCapture());
         return true;
     }
 
@@ -440,47 +433,52 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         int id = item.getItemId();
 
         if (id == R.id.action_search) {
+            Intent intent = new Intent(this, SearchActivity.class);
+            startActivity(intent);
+
             return true;
         } else if (id == R.id.action_delete) {
-            if (mSelectedContents != null && !mSelectedContents.isEmpty()) {
-                AlertDialog dialog = new AlertDialog.Builder(mContext)
-                        .setMessage("要删除此内容吗？")
-                        .setNegativeButton("取消", null)
-                        .setPositiveButton("删除", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                deleteContent();
-                            }
-                        })
-                        .create();
-                dialog.show();
+            if (mContentListFragment != null) {
+                mContentListFragment.checkDeleteContent();
             }
 
+            return true;
+        } else if (id == R.id.action_fast_capture) {
+            item.setChecked(!item.isChecked());
+
+            SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
+            toggleFloatWindow(item.isChecked());
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    private void deleteContent() {
-        if (mSelectedContents != null && !mSelectedContents.isEmpty()) {
+    private boolean mFloatBound;
+    ServiceConnection connFloat = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mFloatBound = true;
+            myAidlInterface = IFloatAidlInterface.Stub.asInterface(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mFloatBound = false;
+        }
+    };
+    IFloatAidlInterface myAidlInterface;
+
+    private void toggleFloatWindow(boolean toggle) {
+        if (myAidlInterface == null) {
+            Intent intent = new Intent(this, FloatingWindowService.class);
+            intent.putExtra(FloatingWindowService.EXTRA_TOGGLE, toggle);
+            bindService(intent, connFloat, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT);
+        } else {
             try {
-                if (!mDBHelper.deleteContent(mSelectedContents)) {
-                    TipsUtil.showToast(mContext, "删除所选内容失败");
-                    return;
-                }
-
-                mContentList.removeAll(mSelectedContents);
-                for (Content content : mSelectedContents) {
-                    if (!TextUtils.isEmpty(content.getMediaFilePath())) {
-                        new File(content.getMediaFilePath()).delete();
-                    }
-                }
-
-                exitEditMode();
-            } catch (Exception e) {
+                myAidlInterface.toggleFloatWindow(toggle);
+            } catch (RemoteException e) {
                 e.printStackTrace();
-                TipsUtil.showToast(mContext, "删除所选内容失败");
             }
         }
     }
@@ -502,10 +500,11 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
                     }
                     break;
                 case R.id.fab_add_photo:
+                    gotoTakePicture();
                     break;
                 case R.id.fab_add_video:
                     if (getVideoPermissions()) {
-
+                        gotoVideoRecord();
                     }
                     break;
             }
@@ -521,135 +520,66 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
         Intent intent = new Intent(mContext, AudioRecordActivity.class);
         startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
     }
-    //endregion
 
-    //region 列表项事件回调
-    @Override
-    public void onItemClick(int position) {
-        if (mIsInEditMode) {
-            mContentList.get(position).setSelect(!mContentList.get(position).isSelect());
-            if (mSelectedContents == null)
-                mSelectedContents = new ArrayList<>();
-            if (mContentList.get(position).isSelect()) {
-                mSelectedContents.add(mContentList.get(position));
-            } else {
-                mSelectedContents.remove(mContentList.get(position));
-            }
-            if (mSelectedContents.isEmpty()) {
-                exitEditMode();
-            } else {
-                mContentListAdapter.notifyItemChanged(position);
-            }
+    private void gotoTakePicture() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        mCameraFilePath = FileUtil.getMediaFilePath(this, FileUtil.MEDIA_TYPE_PHOTO);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(mCameraFilePath)));
+        } else {
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath);
+            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
         }
+
+        startActivityForResult(intent, REQ_CODE_TAKE_PICTURE);
     }
 
-    @Override
-    public void onItemLongPressed(int position) {
-        if (!mIsInEditMode) {
-            mContentList.get(position).setSelect(true);
-            if (mSelectedContents == null)
-                mSelectedContents = new ArrayList<>();
-            mSelectedContents.add(mContentList.get(position));
-            gotoEditMode();
+    private void gotoVideoRecord() {
+        Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        mCameraFilePath = FileUtil.getMediaFilePath(this, FileUtil.MEDIA_TYPE_VIDEO);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(mCameraFilePath)));
+        } else {
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath);
+            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
         }
-    }
-
-    private void gotoEditMode() {
-        mIsInEditMode = true;
-        invalidateOptionsMenu();
-        hideAddButton();
-        mContentListAdapter.setEditMode(true);
-        mContentListAdapter.notifyDataSetChanged();
-    }
-
-    private void exitEditMode() {
-        mIsInEditMode = false;
-        invalidateOptionsMenu();
-        showAddButton();
-        if (mSelectedContents != null && !mSelectedContents.isEmpty()) {
-            for (Content content : mSelectedContents) {
-                content.setSelect(false);
-            }
-            mSelectedContents.clear();
-        }
-        mContentListAdapter.setEditMode(false);
-        mContentListAdapter.notifyDataSetChanged();
+        startActivityForResult(intent, REQ_CODE_VIDEO_CAPTURE);
     }
     //endregion
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-//        if (ConstantValues.CONTENT_TYPE_AUDIO == mType || ConstantValues.CONTENT_TYPE_VIDEO == mType) {
-//            initMediaPlayer();
-//        }
-    }
-
-    private void initMediaPlayer() {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = new MediaPlayer();
-            mPlayState = MediaPlayState.IDLE;
-            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mp) {
-                    mPlayState = MediaPlayState.COMPLETED;
-//                    if (mAudioView != null) {
-//                        mAudioView.stopAnimation();
-//                    }
-                }
-            });
-            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "MediaPlayer onError");
-                    mPlayState = MediaPlayState.ERROR;
-
-                    mp.reset();
-                    mPlayState = MediaPlayState.IDLE;
-
-                    initMediaPlayer();
-                    return true;
-                }
-            });
-        }
-        setMediaPlayerSource();
-        prepareMediaPlayer();
-    }
-
-    private void setMediaPlayerSource() {
-//        try {
-//            mMediaPlayer.setDataSource(mContent.getMediaFilePath());
-//            mPlayState = MediaPlayState.INITIALIZED;
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-    }
-
-    private void prepareMediaPlayer() {
-        try {
-            mMediaPlayer.prepare();
-            mPlayState = MediaPlayState.PREPARED;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mMediaPlayer != null) {
-            if (mMediaPlayer.isPlaying()) {
-                mMediaPlayer.stop();
-            }
-            mMediaPlayer.release();
-        }
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (REQ_CODE_ADD_CONTENT == requestCode) {
             if (RESULT_OK == resultCode) {
-                getNewerContents();
+                if (mContentListFragment != null) {
+                    mContentListFragment.getNewerContents();
+                }
+            }
+        } else if (REQ_CODE_TAKE_PICTURE == requestCode) {
+            if (RESULT_OK == resultCode) {
+                if (!TextUtils.isEmpty(mCameraFilePath)) {
+                    Content content = new Content();
+                    content.setType(ConstantValues.CONTENT_TYPE_PHOTO);
+                    content.setMediaFilePath(mCameraFilePath);
+                    Intent intent = new Intent(this, PublishActivity.class);
+                    intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_PHOTO);
+                    intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content);
+                    startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
+                }
+            }
+        } else if (REQ_CODE_VIDEO_CAPTURE == requestCode) {
+            if (RESULT_OK == resultCode) {
+                Content content = new Content();
+                content.setType(ConstantValues.CONTENT_TYPE_VIDEO);
+                content.setMediaFilePath(mCameraFilePath);
+                Intent intent = new Intent(this, PublishActivity.class);
+                intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_VIDEO);
+                intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content);
+                startActivityForResult(intent, REQ_CODE_ADD_CONTENT);
             }
         }
     }
@@ -657,12 +587,34 @@ public class MainActivity extends BaseActivity implements ContentListAdapter.Ite
     @Override
     public void onBackPressed() {
         if (mIsAddButtonPressed) {
-            mIsAddButtonPressed = false;
             showOutAnimation();
         } else if (mIsInEditMode) {
             exitEditMode();
+            if (mContentListFragment != null) {
+                mContentListFragment.exitEditMode(true);
+            }
         } else {
             super.onBackPressed();
+//            finish();
+//            System.exit(0);
         }
+    }
+
+    @Override
+    public void gotoEditMode() {
+        mIsInEditMode = true;
+        // 改变菜单项
+        invalidateOptionsMenu();
+        // 隐藏添加按钮
+        hideAddButton();
+    }
+
+    @Override
+    public void exitEditMode() {
+        mIsInEditMode = false;
+        // 改变菜单项
+        invalidateOptionsMenu();
+        // 显示添加按钮
+        showAddButton();
     }
 }

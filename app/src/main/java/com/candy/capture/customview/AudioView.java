@@ -6,15 +6,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 
 import com.candy.capture.R;
@@ -45,6 +41,7 @@ public final class AudioView extends View {
 
     private double mMinAdd;
     private double mProgressRectWidth;
+    private double mProgressPercent;
 
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
@@ -99,7 +96,19 @@ public final class AudioView extends View {
         mCurrentProgress = 0;
         mProgressRectWidth = 0;
         int strokeWidth = DensityUtil.dip2px(getContext(), 2);
-        mMinAdd = (getMeasuredWidth() - 2 * strokeWidth) / (double) mDuration;
+        mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
+        mState = STATE_PLAYING;
+        mDrawState = DRAW_STATE_SMALL;
+        mHandler.sendEmptyMessage(0);
+    }
+
+    public void startAnimation(double progressInPercent) {
+        // 注意这里getMeasuredWidth拿到的可能是0，所以在onMeasure里还会设置mProgressRectWidth和mMinAdd
+        mCurrentProgress = 0;
+        mProgressRectWidth = progressInPercent * getMeasuredWidth();
+        mProgressPercent = progressInPercent;
+        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
+        mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
         mState = STATE_PLAYING;
         mDrawState = DRAW_STATE_SMALL;
         mHandler.sendEmptyMessage(0);
@@ -121,6 +130,16 @@ public final class AudioView extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mHandler.removeCallbacksAndMessages(null);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (getMeasuredWidth() > 0) {
+            mProgressRectWidth = mProgressPercent * getMeasuredWidth();
+            int strokeWidth = DensityUtil.dip2px(getContext(), 2);
+            mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
+        }
     }
 
     @Override
@@ -215,12 +234,13 @@ public final class AudioView extends View {
 
     private void drawProgress(Canvas canvas) {
 
+        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         mProgressRectWidth += mMinAdd;
+        mProgressRectWidth = mProgressRectWidth > getMeasuredWidth() - strokeWidth ? getMeasuredWidth() - strokeWidth : mProgressRectWidth;
         mPaint.setColor(0xffebebeb);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.save();
         Path path = new Path();
-        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         path.addRoundRect(new RectF(0, 0, getMeasuredWidth(), getMeasuredHeight()),
                 getMeasuredHeight() / 6, getMeasuredHeight() / 6, Path.Direction.CW);
         canvas.clipPath(path);

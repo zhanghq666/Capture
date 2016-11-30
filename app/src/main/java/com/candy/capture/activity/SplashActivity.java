@@ -5,12 +5,20 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.TranslateAnimation;
+import android.widget.ImageView;
 
 import com.candy.capture.R;
+import com.candy.capture.core.SharedReferenceManager;
 import com.candy.capture.service.LocationService;
 
 public class SplashActivity extends BaseActivity {
@@ -18,20 +26,149 @@ public class SplashActivity extends BaseActivity {
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
-            Intent intent = new Intent(mContext, MainActivity.class);
-            startActivity(intent);
-            finish();
+            if (msg.what == 99) {
+                Intent intent = new Intent(mContext, MainActivity.class);
+                startActivity(intent);
+                finish();
+            }
             return true;
         }
     });
 
+    private Runnable mShowFengDong = new Runnable() {
+        @Override
+        public void run() {
+            mAction1Iv.setVisibility(View.VISIBLE);
+            mAction2Iv.setVisibility(View.VISIBLE);
+
+            AnimationSet animationSetOut = new AnimationSet(true);
+            animationSetOut.setDuration(300);
+            animationSetOut.setInterpolator(new AccelerateInterpolator());
+            AlphaAnimation alphaOut = new AlphaAnimation(1, 0);
+            animationSetOut.addAnimation(alphaOut);
+            TranslateAnimation translateOut = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, -1,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0);
+            animationSetOut.addAnimation(translateOut);
+
+            AnimationSet animationSetIn = new AnimationSet(true);
+            animationSetIn.setDuration(300);
+            animationSetOut.setInterpolator(new DecelerateInterpolator());
+            AlphaAnimation alphaIn = new AlphaAnimation(0, 1);
+            animationSetIn.addAnimation(alphaIn);
+            TranslateAnimation translateIn = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 1,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0);
+            animationSetIn.addAnimation(translateIn);
+
+            mAction1Iv.startAnimation(animationSetOut);
+            mAction2Iv.startAnimation(animationSetIn);
+
+            animationSetIn.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    mAction1Iv.setVisibility(View.GONE);
+                    mHandler.postDelayed(mShowXinDong, 500);
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+
+                }
+            });
+        }
+    };
+
+    private Runnable mShowXinDong = new Runnable() {
+        @Override
+        public void run() {
+            mAction3Iv.setVisibility(View.VISIBLE);
+
+            AnimationSet animationSetOut = new AnimationSet(true);
+            animationSetOut.setDuration(300);
+            animationSetOut.setInterpolator(new AccelerateInterpolator());
+            AlphaAnimation alphaOut = new AlphaAnimation(1, 0);
+            animationSetOut.addAnimation(alphaOut);
+            TranslateAnimation translateOut = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, -1,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0);
+            animationSetOut.addAnimation(translateOut);
+
+            AnimationSet animationSetIn = new AnimationSet(true);
+            animationSetIn.setDuration(300);
+            animationSetOut.setInterpolator(new DecelerateInterpolator());
+            AlphaAnimation alphaIn = new AlphaAnimation(0, 1);
+            animationSetIn.addAnimation(alphaIn);
+            TranslateAnimation translateIn = new TranslateAnimation(
+                    Animation.RELATIVE_TO_SELF, 1,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0,
+                    Animation.RELATIVE_TO_SELF, 0);
+            animationSetIn.addAnimation(translateIn);
+
+            mAction2Iv.startAnimation(animationSetOut);
+            mAction3Iv.startAnimation(animationSetIn);
+
+            animationSetIn.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    mAction2Iv.setVisibility(View.GONE);
+                    mHandler.sendMessageDelayed(mHandler.obtainMessage(99), 500);
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+
+                }
+            });
+        }
+    };
+
+    private ImageView mAction1Iv;
+    private ImageView mAction2Iv;
+    private ImageView mAction3Iv;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setTheme(R.style.AppTheme_NoActionBar);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-//        startLocationService();
-        mHandler.sendEmptyMessageDelayed(0, 500);
+        findView();
+        setView();
+    }
+
+    private void findView() {
+        mAction1Iv = (ImageView) findViewById(R.id.iv_action1);
+        mAction2Iv = (ImageView) findViewById(R.id.iv_action2);
+        mAction3Iv = (ImageView) findViewById(R.id.iv_action3);
+    }
+
+    private void setView() {
+        if (SharedReferenceManager.getInstance(this).isFirstRun()) {
+            mHandler.postDelayed(mShowFengDong, 1000);
+        } else {
+            mAction1Iv.setVisibility(View.GONE);
+            mAction2Iv.setVisibility(View.GONE);
+            mAction3Iv.setVisibility(View.VISIBLE);
+            mHandler.sendMessageDelayed(mHandler.obtainMessage(99), 500);
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.M)

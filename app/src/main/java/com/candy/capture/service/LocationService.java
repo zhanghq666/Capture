@@ -6,6 +6,7 @@ import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.location.LocationClientOption.LocationMode;
 import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.util.LogUtil;
 
 import android.app.IntentService;
 import android.app.Service;
@@ -55,7 +56,7 @@ public class LocationService extends Service implements BDLocationListener {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
+        LogUtil.d(TAG, "onBind");
         if (client != null && !client.isStarted()) {
             client.registerLocationListener(this);
             client.start();
@@ -65,13 +66,13 @@ public class LocationService extends Service implements BDLocationListener {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
+        LogUtil.d(TAG, "onDestroy");
         super.onDestroy();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand");
+        LogUtil.d(TAG, "onStartCommand");
         if (client != null && !client.isStarted()) {
             client.registerLocationListener(this);
             client.start();
@@ -81,12 +82,12 @@ public class LocationService extends Service implements BDLocationListener {
 
     @Override
     public void onReceiveLocation(BDLocation bdLocation) {
-        Log.d(TAG, "onReceiveLocation");
+        LogUtil.d(TAG, "onReceiveLocation");
         String city = bdLocation.getCity();
         SharedReferenceManager.getInstance(this).setLocationCity(city);
         if (client != null) {
             if (client.isStarted()) {
-                Log.d(TAG, "onReceiveLocation client.stop()");
+                LogUtil.d(TAG, "onReceiveLocation client.stop()");
                 client.stop();
             }
             client.unRegisterLocationListener(this);

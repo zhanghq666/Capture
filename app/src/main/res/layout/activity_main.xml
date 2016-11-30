@@ -2,10 +2,11 @@
 <android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cl_root"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cl_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorBackground"
     android:fitsSystemWindows="true"
     tools:context="com.candy.capture.activity.MainActivity">
 
@@ -19,12 +20,11 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            app:navigationIcon="@mipmap/ic_menu"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            app:popupTheme="@style/AppTheme.PopupOverlay"/>
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/content_main" />
+    <include layout="@layout/content_main"/>
 
     <View
         android:id="@+id/mask_view"
@@ -39,9 +39,9 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="100dp"
-        app:srcCompat="@mipmap/ic_add_text"
         android:alpha="0"
-        app:backgroundTint="@color/colorPrimary" />
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@mipmap/ic_add_text"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_add_audio"
@@ -50,9 +50,9 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="100dp"
-        app:srcCompat="@mipmap/ic_add_audio"
         android:alpha="0"
-        app:backgroundTint="@color/colorPrimary" />
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@mipmap/ic_add_audio"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_add_photo"
@@ -61,9 +61,9 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="100dp"
-        app:srcCompat="@mipmap/ic_add_photo"
         android:alpha="0"
-        app:backgroundTint="@color/colorPrimary" />
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@mipmap/ic_add_photo"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_add_video"
@@ -72,9 +72,9 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="100dp"
-        app:srcCompat="@mipmap/ic_add_video"
         android:alpha="0"
-        app:backgroundTint="@color/colorPrimary" />
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@mipmap/ic_add_video"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_add"
@@ -83,7 +83,8 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="100dp"
-        app:srcCompat="@mipmap/ic_add"
-        app:backgroundTint="@color/colorPrimary" />
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@mipmap/ic_add"/>
 
 </android.support.design.widget.CoordinatorLayout>
+

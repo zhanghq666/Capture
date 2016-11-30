@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#081fcc</color>
-    <color name="colorPrimaryDark">#071bb3</color>
+    <color name="colorPrimary">#2048cc</color>
+    <color name="colorPrimaryDark">#1d40b3</color>
     <!--<color name="colorAccent">#FF4081</color>-->
 
     <color name="colorTextPrimary">#1f1f1f</color>
     <color name="colorTextSecondary">#232323</color>
     <color name="colorGray">#aaaaaa</color>
+    <color name="colorDarkGray">#9b9b9b</color>
+    <color name="colorTranslucence">#33000000</color>
 
-    <color name="colorAudioPoint1">#0923e5</color>
-    <color name="colorAudioPoint2">#081fcc</color>
-    <color name="colorAudioPoint3">#071bb2</color>
-    <color name="colorAudioPoint4">#061799</color>
+    <color name="colorAudioPoint1">#1d40b3</color>
+    <color name="colorAudioPoint2">#2048cc</color>
+    <color name="colorAudioPoint3">#1d40b3</color>
+    <color name="colorAudioPoint4">#183699</color>
+
+    <color name="colorBlack">#000000</color>
+    <color name="colorWhite">#ffffff</color>
+
+    <color name="colorBackground">#f2f2f2</color>
 </resources>
