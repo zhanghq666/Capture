@@ -92,6 +92,6 @@ public class LocationService extends Service implements BDLocationListener {
             }
             client.unRegisterLocationListener(this);
         }
-//        stopSelf();
+        stopSelf();
     }
 }
