@@ -20,7 +20,7 @@ public class CaptureApplication extends Application {
         // 正式发布后注释掉下面这句代码
 //        MobclickAgent.setDebugMode(true);
 
-        Intent intent = new Intent(this, FloatingWindowService.class);
-        startService(intent);
+//        Intent intent = new Intent(this, FloatingWindowService.class);
+//        startService(intent);
     }
 }

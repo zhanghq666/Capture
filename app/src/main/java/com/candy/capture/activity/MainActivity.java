@@ -171,8 +171,10 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     };
 
     private void startLocationService() {
-        Intent intent = new Intent(mContext, LocationService.class);
-        bindService(intent, connLocation, BIND_AUTO_CREATE);
+        if (!mLocationBound) {
+            Intent intent = new Intent(mContext, LocationService.class);
+            bindService(intent, connLocation, BIND_AUTO_CREATE);
+        }
     }
 
     @Override
@@ -424,7 +426,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             menu.findItem(R.id.action_search).setVisible(true);
             menu.findItem(R.id.action_delete).setVisible(false);
         }
-        menu.findItem(R.id.action_fast_capture).setChecked(SharedReferenceManager.getInstance(this).isAllowFastCapture());
+//        menu.findItem(R.id.action_fast_capture).setChecked(SharedReferenceManager.getInstance(this).isAllowFastCapture());
         return true;
     }
 
@@ -443,13 +445,13 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             }
 
             return true;
-        } else if (id == R.id.action_fast_capture) {
+        }/* else if (id == R.id.action_fast_capture) {
             item.setChecked(!item.isChecked());
 
             SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
             toggleFloatWindow(item.isChecked());
             return true;
-        }
+        }*/
 
         return super.onOptionsItemSelected(item);
     }

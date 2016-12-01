@@ -16,9 +16,9 @@
         app:showAsAction="always"
         android:visible="true"/>
 
-    <item
+    <!--<item
         android:id="@+id/action_fast_capture"
         android:title="启用快速Capture"
         android:checkable="true"
-        app:showAsAction="never"/>
+        app:showAsAction="never"/>-->
 </menu>
