@@ -7,19 +7,19 @@ import android.content.SharedPreferences;
  * Created by zhanghq on 2016/11/11.
  */
 
-public class SharedReferenceManager {
+public class SharedPreferenceManager {
 
-    private static SharedReferenceManager instance;
-    private SharedReferenceManager(Context context) {
+    private static SharedPreferenceManager instance;
+    private SharedPreferenceManager(Context context) {
         mContext = context;
         init();
     }
 
-    public static SharedReferenceManager getInstance(Context context) {
+    public static SharedPreferenceManager getInstance(Context context) {
         if (instance == null) {
-            synchronized (SharedReferenceManager.class) {
+            synchronized (SharedPreferenceManager.class) {
                 if (instance == null) {
-                    instance = new SharedReferenceManager(context.getApplicationContext());
+                    instance = new SharedPreferenceManager(context.getApplicationContext());
                 }
             }
         }
@@ -50,7 +50,7 @@ public class SharedReferenceManager {
     }
 
     public void setLocationCity(String locationCity) {
-        synchronized (SharedReferenceManager.class) {
+        synchronized (SharedPreferenceManager.class) {
             if (!mLocationCity.equals(locationCity)) {
                 mLocationCity = locationCity;
                 mSharedPreferences.edit().putString(KEY_LOCATION_CITY, mLocationCity).apply();
@@ -63,7 +63,7 @@ public class SharedReferenceManager {
     }
 
     public void setAllowFastCapture(boolean allowFastCapture) {
-        synchronized (SharedReferenceManager.class) {
+        synchronized (SharedPreferenceManager.class) {
             mAllowFastCapture = allowFastCapture;
             mSharedPreferences.edit().putBoolean(KEY_FAST_CAPTURE, mAllowFastCapture).apply();
         }
@@ -74,7 +74,7 @@ public class SharedReferenceManager {
     }
 
     public void setFirstRun(boolean firstRun) {
-        synchronized (SharedReferenceManager.class) {
+        synchronized (SharedPreferenceManager.class) {
             mIsFirstRun = firstRun;
             mSharedPreferences.edit().putBoolean(KEY_IS_FIRST_RUN, mIsFirstRun).apply();
         }

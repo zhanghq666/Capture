@@ -18,7 +18,7 @@ import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 
 import com.candy.capture.R;
-import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.service.LocationService;
 
 public class SplashActivity extends BaseActivity {
@@ -161,7 +161,7 @@ public class SplashActivity extends BaseActivity {
     }
 
     private void setView() {
-        if (SharedReferenceManager.getInstance(this).isFirstRun()) {
+        if (SharedPreferenceManager.getInstance(this).isFirstRun()) {
             mHandler.postDelayed(mShowFengDong, 1000);
         } else {
             mAction1Iv.setVisibility(View.GONE);

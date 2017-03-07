@@ -5,7 +5,6 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,7 +17,7 @@ import com.candy.capture.R;
 import com.candy.capture.core.BackStackManager;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
-import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.customview.AudioView;
 import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
@@ -218,7 +217,7 @@ public class PublishActivity extends BaseActivity implements View.OnClickListene
             mContent.setType(mType);
         }
         mContent.setDesc(mDescEt.getText().toString().trim());
-        mContent.setCityName(SharedReferenceManager.getInstance(mContext).getLocationCity());
+        mContent.setCityName(SharedPreferenceManager.getInstance(mContext).getLocationCity());
         mContent.setReleaseTime((int) (new Date().getTime() / 1000));
         return dbHelper.insertContent(mContent);
     }

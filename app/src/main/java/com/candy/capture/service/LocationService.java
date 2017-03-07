@@ -5,16 +5,13 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.location.LocationClientOption.LocationMode;
-import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.util.LogUtil;
 
-import android.app.IntentService;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 public class LocationService extends Service implements BDLocationListener {
     private static final String TAG = "LocationService";
@@ -84,7 +81,7 @@ public class LocationService extends Service implements BDLocationListener {
     public void onReceiveLocation(BDLocation bdLocation) {
         LogUtil.d(TAG, "onReceiveLocation");
         String city = bdLocation.getCity();
-        SharedReferenceManager.getInstance(this).setLocationCity(city);
+        SharedPreferenceManager.getInstance(this).setLocationCity(city);
         if (client != null) {
             if (client.isStarted()) {
                 LogUtil.d(TAG, "onReceiveLocation client.stop()");

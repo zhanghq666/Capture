@@ -29,7 +29,7 @@ import android.view.animation.OvershootInterpolator;
 import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
 import com.candy.capture.core.ConstantValues;
-import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.fragment.ContentListFragment;
 import com.candy.capture.service.FloatingWindowService;
 import com.candy.capture.service.LocationService;
@@ -99,7 +99,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         getWholePermissions();
 
         if (savedInstanceState == null) {
-            SharedReferenceManager.getInstance(this).setFirstRun(false);
+            SharedPreferenceManager.getInstance(this).setFirstRun(false);
 
             mContentListFragment = ContentListFragment.newInstance(false);
             getSupportFragmentManager().beginTransaction().add(R.id.fl_fragment, mContentListFragment, "content_list").commit();
@@ -339,11 +339,13 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     //endregion
 
     //region FloatingActionButton动画
+    private static final int SINGLE_ANITION_DURATION = 200;
+
     private void showOutAnimation() {
         mIsAddButtonPressed = false;
 
         mMaskView.setVisibility(View.GONE);
-        mAddContentFab.animate().rotation(0).scaleX(1).scaleY(1).setDuration(200).setListener(new Animator.AnimatorListener() {
+        mAddContentFab.animate().rotation(0).scaleX(1).scaleY(1).setDuration(SINGLE_ANITION_DURATION).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
 
@@ -364,10 +366,10 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
             }
         }).setInterpolator(new AccelerateInterpolator()).start();
-        mAddTextFab.animate().translationX(0).alpha(0).setStartDelay(300).setDuration(200).setInterpolator(new AccelerateInterpolator()).start();
-        mAddAudioFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(200).setDuration(200).setInterpolator(new AccelerateInterpolator()).start();
-        mAddPhotoFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(100).setDuration(200).setInterpolator(new AccelerateInterpolator()).start();
-        mAddVideoFab.animate().translationY(0).alpha(0).setStartDelay(0).setDuration(200).setInterpolator(new AccelerateInterpolator()).start();
+        mAddTextFab.animate().translationX(0).alpha(0).setStartDelay(300).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddAudioFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(200).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddPhotoFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(100).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddVideoFab.animate().translationY(0).alpha(0).setStartDelay(0).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
     }
 
     private void showInAnimation() {
@@ -375,7 +377,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
         mMaskView.setVisibility(View.VISIBLE);
         int radius = DensityUtil.dip2px(mContext, 150);
-        mAddContentFab.animate().rotation(45).scaleX((float) 0.8).scaleY((float) 0.8).setDuration(200).setListener(new Animator.AnimatorListener() {
+        mAddContentFab.animate().rotation(45).scaleX((float) 0.8).scaleY((float) 0.8).setDuration(SINGLE_ANITION_DURATION).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
 
@@ -396,20 +398,20 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
             }
         }).setInterpolator(new OvershootInterpolator()).start();
-        mAddTextFab.animate().translationXBy(-radius).alphaBy(1).setStartDelay(0).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
-        mAddAudioFab.animate().translationXBy((float) -(Math.sin(Math.PI / 3) * radius))
-                .translationYBy((float) -(Math.cos(Math.PI / 3) * radius)).alphaBy(1).setStartDelay(100).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
-        mAddPhotoFab.animate().translationXBy((float) -(Math.sin(Math.PI / 6) * radius))
-                .translationYBy((float) -(Math.cos(Math.PI / 6) * radius)).alphaBy(1).setStartDelay(200).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
-        mAddVideoFab.animate().translationYBy(-radius).alphaBy(1).setStartDelay(300).setDuration(200).setInterpolator(new OvershootInterpolator()).start();
+        mAddTextFab.animate().translationX(-radius).alphaBy(1).setStartDelay(0).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+        mAddAudioFab.animate().translationX((float) -(Math.sin(Math.PI / 3) * radius))
+                .translationY((float) -(Math.cos(Math.PI / 3) * radius)).alphaBy(1).setStartDelay(100).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+        mAddPhotoFab.animate().translationX((float) -(Math.sin(Math.PI / 6) * radius))
+                .translationY((float) -(Math.cos(Math.PI / 6) * radius)).alphaBy(1).setStartDelay(200).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+        mAddVideoFab.animate().translationY(-radius).alphaBy(1).setStartDelay(300).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
     }
 
     private void hideAddButton() {
-        mAddContentFab.animate().scaleX(0).scaleY(0).setDuration(200).start();
+        mAddContentFab.animate().scaleX(0).scaleY(0).setDuration(SINGLE_ANITION_DURATION).start();
     }
 
     private void showAddButton() {
-        mAddContentFab.animate().scaleX(1).scaleY(1).setDuration(200).start();
+        mAddContentFab.animate().scaleX(1).scaleY(1).setDuration(SINGLE_ANITION_DURATION).start();
     }
     //endregion
 
@@ -424,7 +426,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             menu.findItem(R.id.action_search).setVisible(true);
             menu.findItem(R.id.action_delete).setVisible(false);
         }
-        menu.findItem(R.id.action_fast_capture).setChecked(SharedReferenceManager.getInstance(this).isAllowFastCapture());
+        menu.findItem(R.id.action_fast_capture).setChecked(SharedPreferenceManager.getInstance(this).isAllowFastCapture());
         return true;
     }
 
@@ -446,7 +448,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         } else if (id == R.id.action_fast_capture) {
             item.setChecked(!item.isChecked());
 
-            SharedReferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
+            SharedPreferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
             toggleFloatWindow(item.isChecked());
             return true;
         }

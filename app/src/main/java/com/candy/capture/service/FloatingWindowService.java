@@ -13,7 +13,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -21,7 +20,7 @@ import android.widget.RelativeLayout;
 import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
 import com.candy.capture.core.ConstantValues;
-import com.candy.capture.core.SharedReferenceManager;
+import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TipsUtil;
 
@@ -47,7 +46,7 @@ public class FloatingWindowService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand " + SharedReferenceManager.getInstance(this).isAllowFastCapture());
+        Log.d(TAG, "onStartCommand " + SharedPreferenceManager.getInstance(this).isAllowFastCapture());
         if (Build.VERSION.SDK_INT < 18) {
             startForeground(ConstantValues.FLOAT_SERVICE_ID, new Notification());//API < 18 ，此方法能有效隐藏Notification上的图标
         } else {
@@ -57,7 +56,7 @@ public class FloatingWindowService extends Service {
         }
 
 
-        if (SharedReferenceManager.getInstance(this).isAllowFastCapture()) {
+        if (SharedPreferenceManager.getInstance(this).isAllowFastCapture()) {
             addFloatView();
         } else {
             removeFloatView();
