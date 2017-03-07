@@ -91,7 +91,7 @@
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing">
         </activity>
 
-        <service
+        <!--<service
             android:name=".service.FloatingWindowService"
             android:enabled="true"
             android:exported="false"
@@ -110,7 +110,7 @@
                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
             </intent-filter>
-        </receiver>
+        </receiver>-->
     </application>
 
 </manifest>

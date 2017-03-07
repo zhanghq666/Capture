@@ -89,9 +89,6 @@ android {
         xiaomi {
             manifestPlaceholders = [ CHANNEL_NAME:"XiaoMi" ]
         }
-        huawei {
-            manifestPlaceholders = [ CHANNEL_NAME:"HuaWei" ]
-        }
         _360 {
             manifestPlaceholders = [ CHANNEL_NAME:"360" ]
         }

@@ -171,8 +171,10 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     };
 
     private void startLocationService() {
-        Intent intent = new Intent(mContext, LocationService.class);
-        bindService(intent, connLocation, BIND_AUTO_CREATE);
+        if (!mLocationBound) {
+            Intent intent = new Intent(mContext, LocationService.class);
+            bindService(intent, connLocation, BIND_AUTO_CREATE);
+        }
     }
 
     @Override
