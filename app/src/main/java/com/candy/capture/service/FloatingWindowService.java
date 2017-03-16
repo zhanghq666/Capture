@@ -82,7 +82,7 @@ public class FloatingWindowService extends Service {
             return;
         wmParams = new WindowManager.LayoutParams();
         //获取的是WindowManagerImpl.CompatModeWrapper
-        mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        mWindowManager = (WindowManager) getApplicationContext().getSystemService(WINDOW_SERVICE);
         //设置window type
         wmParams.type = WindowManager.LayoutParams.TYPE_TOAST;
         //设置图片格式，效果为背景透明
@@ -123,23 +123,50 @@ public class FloatingWindowService extends Service {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                //getRawX是触摸位置相对于屏幕的坐标，getX是相对于按钮的坐标
-                wmParams.x = (int) event.getRawX() - mHomeBtn.getMeasuredWidth() / 2;
-                //减25为状态栏的高度
-                wmParams.y = (int) event.getRawY() - mHomeBtn.getMeasuredHeight() / 2 - getStatusBarHeight();
-                //刷新
-                mWindowManager.updateViewLayout(mFloatLayout, wmParams);
+                switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                    case MotionEvent.ACTION_DOWN:
+                        mCurrentX = event.getRawX();
+                        mCurrentY = event.getRawY();
+                        mDownX = event.getX();
+                        mDownY = event.getY();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        mCurrentX = event.getRawX();
+                        mCurrentY = event.getRawY();
+
+                        int newX = (int) (mCurrentX - (mDownX - mHomeBtn.getMeasuredWidth() / 2));
+                        int newY = (int) (mCurrentY - (mDownY - mHomeBtn.getMeasuredHeight() / 2));
+                        updatePosition(newX, newY);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+
+                        break;
+                }
+
                 return false;
             }
         });
 
-        mHomeBtn.setOnClickListener(new View.OnClickListener() {
+//        mHomeBtn.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View v) {
+//                TipsUtil.showToast(getApplicationContext(), "Home Btn Click");
+//            }
+//        });
+    }
 
-            @Override
-            public void onClick(View v) {
-                TipsUtil.showToast(getApplicationContext(), "Home Btn Click");
-            }
-        });
+    private float mDownX, mDownY, mCurrentX, mCurrentY;
+
+    private void updatePosition(int newX, int newY) {
+        Log.d(TAG, "updatePosition, x:" + newX + " y:" + newY);
+
+        //getRawX是触摸位置相对于屏幕的坐标，getX是相对于按钮的坐标
+        wmParams.x = newX - mHomeBtn.getMeasuredWidth() / 2;
+        wmParams.y = newY - mHomeBtn.getMeasuredHeight() / 2 - getStatusBarHeight();
+        //刷新
+        mWindowManager.updateViewLayout(mFloatLayout, wmParams);
     }
 
     /**
@@ -186,6 +213,7 @@ public class FloatingWindowService extends Service {
 
     @Override
     public void onDestroy() {
+        LogUtil.d(TAG, "onDestroy");
         super.onDestroy();
         removeFloatView();
     }

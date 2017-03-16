@@ -5,6 +5,7 @@ import android.animation.Animator;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -15,9 +16,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.View;
@@ -36,6 +39,7 @@ import com.candy.capture.service.LocationService;
 import com.candy.capture.model.Content;
 import com.candy.capture.util.DensityUtil;
 import com.candy.capture.util.FileUtil;
+import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TipsUtil;
 
 import java.io.File;
@@ -45,13 +49,14 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
     private static final String TAG = "MainActivity";
 
-    private final int WHOLE_PERMISSION_REQUEST = 1;
-    private final int AUDIO_PERMISSION_REQUEST = 2;
-    private final int VIDEO_PERMISSION_REQUEST = 3;
+    private static final int WHOLE_PERMISSION_REQUEST = 1;
+    private static final int AUDIO_PERMISSION_REQUEST = 2;
+    private static final int VIDEO_PERMISSION_REQUEST = 3;
 
-    private final int REQ_CODE_ADD_CONTENT = 1;
-    private final int REQ_CODE_TAKE_PICTURE = 2;
-    private final int REQ_CODE_VIDEO_CAPTURE = 3;
+    private static final int REQ_CODE_ADD_CONTENT = 1;
+    private static final int REQ_CODE_TAKE_PICTURE = 2;
+    private static final int REQ_CODE_VIDEO_CAPTURE = 3;
+    private static final int REQ_CODE_OVERLAY_PERMISSION = 4;
 
     private CoordinatorLayout mRootCl;
     private FloatingActionButton mAddContentFab;
@@ -76,6 +81,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     private boolean mIsInEditMode;
 
     private String mCameraFilePath;
+    private AlertDialog mFloatingAlertDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,32 +163,38 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         }
     }
 
-    private boolean mLocationBound;
-    private ServiceConnection connLocation = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mLocationBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mLocationBound = false;
-        }
-    };
+//    private boolean mLocationBound;
+//    private ServiceConnection connLocation = new ServiceConnection() {
+//        @Override
+//        public void onServiceConnected(ComponentName name, IBinder service) {
+//            LogUtil.d(TAG, "Location service connected");
+//            mLocationBound = true;
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName name) {
+//            LogUtil.d(TAG, "Location service disconnected");
+//            mLocationBound = false;
+//        }
+//    };
 
     private void startLocationService() {
-        if (!mLocationBound) {
+//        if (!mLocationBound) {
             Intent intent = new Intent(mContext, LocationService.class);
-            bindService(intent, connLocation, BIND_AUTO_CREATE);
-        }
+//            bindService(intent, connLocation, BIND_AUTO_CREATE);
+            startService(intent);
+//        }
     }
 
     @Override
     protected void onDestroy() {
-        if (mLocationBound) {
-            unbindService(connLocation);
-        }
+        LogUtil.d(TAG, "onDestroy");
+//        if (mLocationBound) {
+//            LogUtil.d(TAG, "will unbind location service");
+//            unbindService(connLocation);
+//        }
         if (mFloatBound) {
+            LogUtil.d(TAG, "will unbind floating service");
             unbindService(connFloat);
         }
         super.onDestroy();
@@ -208,6 +220,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
             }
+
             /*
              * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
 			 */
@@ -341,13 +354,13 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     //endregion
 
     //region FloatingActionButton动画
-    private static final int SINGLE_ANITION_DURATION = 200;
+    private static final int SINGLE_ANIMATION_DURATION = 200;
 
     private void showOutAnimation() {
         mIsAddButtonPressed = false;
 
         mMaskView.setVisibility(View.GONE);
-        mAddContentFab.animate().rotation(0).scaleX(1).scaleY(1).setDuration(SINGLE_ANITION_DURATION).setListener(new Animator.AnimatorListener() {
+        mAddContentFab.animate().rotation(0).scaleX(1).scaleY(1).setDuration(SINGLE_ANIMATION_DURATION).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
 
@@ -368,10 +381,10 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
             }
         }).setInterpolator(new AccelerateInterpolator()).start();
-        mAddTextFab.animate().translationX(0).alpha(0).setStartDelay(300).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
-        mAddAudioFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(200).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
-        mAddPhotoFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(100).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
-        mAddVideoFab.animate().translationY(0).alpha(0).setStartDelay(0).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddTextFab.animate().translationX(0).alpha(0).setStartDelay(300).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddAudioFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(200).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddPhotoFab.animate().translationX(0).translationY(0).alpha(0).setStartDelay(100).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
+        mAddVideoFab.animate().translationY(0).alpha(0).setStartDelay(0).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new AccelerateInterpolator()).start();
     }
 
     private void showInAnimation() {
@@ -379,7 +392,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
         mMaskView.setVisibility(View.VISIBLE);
         int radius = DensityUtil.dip2px(mContext, 150);
-        mAddContentFab.animate().rotation(45).scaleX((float) 0.8).scaleY((float) 0.8).setDuration(SINGLE_ANITION_DURATION).setListener(new Animator.AnimatorListener() {
+        mAddContentFab.animate().rotation(45).scaleX((float) 0.8).scaleY((float) 0.8).setDuration(SINGLE_ANIMATION_DURATION).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
 
@@ -400,20 +413,20 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
             }
         }).setInterpolator(new OvershootInterpolator()).start();
-        mAddTextFab.animate().translationX(-radius).alphaBy(1).setStartDelay(0).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+        mAddTextFab.animate().translationX(-radius).alphaBy(1).setStartDelay(0).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new OvershootInterpolator()).start();
         mAddAudioFab.animate().translationX((float) -(Math.sin(Math.PI / 3) * radius))
-                .translationY((float) -(Math.cos(Math.PI / 3) * radius)).alphaBy(1).setStartDelay(100).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+                .translationY((float) -(Math.cos(Math.PI / 3) * radius)).alphaBy(1).setStartDelay(100).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new OvershootInterpolator()).start();
         mAddPhotoFab.animate().translationX((float) -(Math.sin(Math.PI / 6) * radius))
-                .translationY((float) -(Math.cos(Math.PI / 6) * radius)).alphaBy(1).setStartDelay(200).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
-        mAddVideoFab.animate().translationY(-radius).alphaBy(1).setStartDelay(300).setDuration(SINGLE_ANITION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+                .translationY((float) -(Math.cos(Math.PI / 6) * radius)).alphaBy(1).setStartDelay(200).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new OvershootInterpolator()).start();
+        mAddVideoFab.animate().translationY(-radius).alphaBy(1).setStartDelay(300).setDuration(SINGLE_ANIMATION_DURATION).setInterpolator(new OvershootInterpolator()).start();
     }
 
     private void hideAddButton() {
-        mAddContentFab.animate().scaleX(0).scaleY(0).setDuration(SINGLE_ANITION_DURATION).start();
+        mAddContentFab.animate().scaleX(0).scaleY(0).setDuration(SINGLE_ANIMATION_DURATION).start();
     }
 
     private void showAddButton() {
-        mAddContentFab.animate().scaleX(1).scaleY(1).setDuration(SINGLE_ANITION_DURATION).start();
+        mAddContentFab.animate().scaleX(1).scaleY(1).setDuration(SINGLE_ANIMATION_DURATION).start();
     }
     //endregion
 
@@ -434,40 +447,77 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        boolean handled = false;
         int id = item.getItemId();
 
         if (id == R.id.action_search) {
             Intent intent = new Intent(this, SearchActivity.class);
             startActivity(intent);
 
-            return true;
+            handled = true;
         } else if (id == R.id.action_delete) {
             if (mContentListFragment != null) {
                 mContentListFragment.checkDeleteContent();
             }
 
-            return true;
+            handled = true;
         } else if (id == R.id.action_fast_capture) {
-            item.setChecked(!item.isChecked());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!Settings.canDrawOverlays(mContext)) {
+                    if (mFloatingAlertDialog == null) {
+                        mFloatingAlertDialog = new AlertDialog.Builder(mContext)
+                                .setTitle("无悬浮窗权限")
+                                .setMessage("请前往设置-应用管理中为Capture开启显示悬浮窗权限")
+                                .setPositiveButton("去设置", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                                Uri.parse("package:" + getPackageName()));
+                                        startActivityForResult(intent, REQ_CODE_OVERLAY_PERMISSION);
+                                    }
+                                })
+                                .setNegativeButton("先等会", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
 
-            SharedPreferenceManager.getInstance(this).setAllowFastCapture(item.isChecked());
-            toggleFloatWindow(item.isChecked());
-            return true;
+                                    }
+                                })
+                                .create();
+                    }
+                    mFloatingAlertDialog.show();
+                } else {
+                    menuCheck(item);
+                }
+            } else {
+                menuCheck(item);
+            }
+            handled = true;
         }
 
-        return super.onOptionsItemSelected(item);
+        return handled || super.onOptionsItemSelected(item);
     }
+
+    private void menuCheck(MenuItem item) {
+        boolean showFloating = !item.isChecked();
+        item.setChecked(showFloating);
+
+        SharedPreferenceManager.getInstance(this).setAllowFastCapture(showFloating);
+        toggleFloatWindow(showFloating);
+    }
+
 
     private boolean mFloatBound;
     ServiceConnection connFloat = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            LogUtil.d(TAG, "Floating service connected");
             mFloatBound = true;
             myAidlInterface = IFloatAidlInterface.Stub.asInterface(service);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            LogUtil.d(TAG, "Floating service disconnected");
             mFloatBound = false;
         }
     };
@@ -475,6 +525,9 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
 
     private void toggleFloatWindow(boolean toggle) {
         if (myAidlInterface == null) {
+            Intent intent1 = new Intent(this, FloatingWindowService.class);
+            this.startService(intent1);
+
             Intent intent = new Intent(this, FloatingWindowService.class);
             intent.putExtra(FloatingWindowService.EXTRA_TOGGLE, toggle);
             bindService(intent, connFloat, BIND_AUTO_CREATE | BIND_ABOVE_CLIENT);
