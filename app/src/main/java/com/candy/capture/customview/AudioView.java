@@ -7,6 +7,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.Region;
+import android.media.session.PlaybackState;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
@@ -23,6 +25,10 @@ import com.candy.capture.util.DensityUtil;
 public final class AudioView extends View {
 
     private static final int ARC_LEFT_MARGIN_IN_DP = 10;
+
+    private static final int ARC_ANGLE = 90;
+
+    private static final int BORDER_STROKE_WIDTH_IN_DP = 2;
 
     private static final int STATE_STOP = 1;
     private static final int STATE_PLAYING = 2;
@@ -49,14 +55,13 @@ public final class AudioView extends View {
             if (STATE_PLAYING == mState) {
                 mCurrentProgress += 1;
                 invalidate();
-//                int bigArcSize = getMeasuredHeight() * 3 / 4;
-//                invalidate(new Rect(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - bigArcSize) / 2,
-//                        DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + bigArcSize, (getMeasuredHeight() + bigArcSize) / 2));
+                // 0.1秒重绘一次以实现进度流畅变化
                 mHandler.sendEmptyMessageDelayed(0, 100);
             }
             return true;
         }
     });
+    private int strokeWidth;
 
     public AudioView(Context context) {
         super(context);
@@ -86,6 +91,7 @@ public final class AudioView extends View {
 //        });
         mState = STATE_STOP;
         mDrawState = DRAW_STATE_BIG;
+        strokeWidth = DensityUtil.dip2px(getContext(), BORDER_STROKE_WIDTH_IN_DP);
     }
 
     public void setDuration(int duration) {
@@ -95,7 +101,6 @@ public final class AudioView extends View {
     public void startAnimation() {
         mCurrentProgress = 0;
         mProgressRectWidth = 0;
-        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
         mState = STATE_PLAYING;
         mDrawState = DRAW_STATE_SMALL;
@@ -107,7 +112,6 @@ public final class AudioView extends View {
         mCurrentProgress = 0;
         mProgressRectWidth = progressInPercent * getMeasuredWidth();
         mProgressPercent = progressInPercent;
-        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
         mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
         mState = STATE_PLAYING;
         mDrawState = DRAW_STATE_SMALL;
@@ -137,7 +141,6 @@ public final class AudioView extends View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (getMeasuredWidth() > 0) {
             mProgressRectWidth = mProgressPercent * getMeasuredWidth();
-            int strokeWidth = DensityUtil.dip2px(getContext(), 2);
             mMinAdd = (getMeasuredWidth() - strokeWidth) / (double) mDuration;
         }
     }
@@ -154,97 +157,73 @@ public final class AudioView extends View {
     private void drawRect(Canvas canvas) {
         mPaint.setColor(0xff656565);
         mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeWidth(DensityUtil.dip2px(getContext(), 2));
+        mPaint.setStrokeWidth(strokeWidth);
         canvas.drawRoundRect(new RectF(0, 0, getMeasuredWidth(), getMeasuredHeight()),
-                getMeasuredHeight() / 6, getMeasuredHeight() / 6,
+                getMeasuredHeight() / 6f, getMeasuredHeight() / 6f,
                 mPaint);
     }
 
     private void drawArc(Canvas canvas) {
-        Bitmap bitmap = null;
-        int left = DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP);
-        int height = getMeasuredHeight() * 3 / 4;
-        int width = (int) (height * 0.66);
-        RectF rectF = new RectF(left, getMeasuredHeight() / 8, getMeasuredHeight() / 8 + width, height + getMeasuredHeight() / 8);
+        mPaint.setColor(0xff828282);
+        mPaint.setStrokeWidth(strokeWidth);
+        // 三个环每个环角度相同，小环Rect宽高为控件的四分之一高，往外每环比内环宽八分之一控件高度。至于为什么，把每个Arc的rectF画出来就知道了。
+        if (mDrawState >= DRAW_STATE_SMALL) {
+            drawSmallArc(canvas);
+        }
+        if (mDrawState >= DRAW_STATE_MIDDLE) {
+            drawMiddleArc(canvas);
+        }
+        if (mDrawState >= DRAW_STATE_BIG) {
+            drawBigArc(canvas);
+        }
+
         if (STATE_PLAYING == mState) {
-            switch (mDrawState) {
-                case DRAW_STATE_SMALL:
-                    bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_audio1);
-                    break;
-                case DRAW_STATE_MIDDLE:
-                    bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_audio2);
-                    break;
-                case DRAW_STATE_BIG:
-                    bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_audio3);
-                    break;
-            }
             if (mCurrentProgress % 5 == 0) {
                 mDrawState = (++mDrawState) % 3;
             }
-        } else {
-            bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_audio3);
         }
-        canvas.drawBitmap(bitmap, null, rectF, mPaint);
+    }
 
-//        mPaint.setColor(0xff828282);
-//        mPaint.setStrokeWidth(DensityUtil.dip2px(getContext(), 6));
-//        int smallArcSize = getMeasuredHeight() / 4;
-//        int middleArcSize = getMeasuredHeight() / 2;
-//        int bigArcSize = getMeasuredHeight() * 3 / 4;
-//        if (STATE_PLAYING == mState) {
-//            switch (mDrawState) {
-//                case DRAW_STATE_SMALL:
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - smallArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + smallArcSize, (getMeasuredHeight() + smallArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    break;
-//                case DRAW_STATE_MIDDLE:
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - smallArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + smallArcSize, (getMeasuredHeight() + smallArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - middleArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + middleArcSize, (getMeasuredHeight() + middleArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    break;
-//                case DRAW_STATE_BIG:
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - smallArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + smallArcSize, (getMeasuredHeight() + smallArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - middleArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + middleArcSize, (getMeasuredHeight() + middleArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - bigArcSize) / 2,
-//                                    DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + bigArcSize, (getMeasuredHeight() + bigArcSize) / 2),
-//                            -60, 120, false, mPaint);
-//                    break;
-//            }
-//            mDrawState = (++mDrawState) % 3;
-//        } else {
-//            canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - smallArcSize) / 2,
-//                            DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + smallArcSize, (getMeasuredHeight() + smallArcSize) / 2),
-//                    -60, 120, false, mPaint);
-//            canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - middleArcSize) / 2,
-//                            DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + middleArcSize, (getMeasuredHeight() + middleArcSize) / 2),
-//                    -60, 120, false, mPaint);
-//            canvas.drawArc(new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - bigArcSize) / 2,
-//                            DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + bigArcSize, (getMeasuredHeight() + bigArcSize) / 2),
-//                    -60, 120, false, mPaint);
-//        }
+    private void drawSmallArc(Canvas canvas) {
+        mPaint.setColor(0xff828282);
+        mPaint.setStyle(Paint.Style.FILL);
+        int smallArcSize = getMeasuredHeight() / 4;
+        RectF rectF = new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - smallArcSize) / 2,
+                DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + smallArcSize, (getMeasuredHeight() + smallArcSize) / 2);
+        canvas.drawArc(rectF, -ARC_ANGLE / 2f, ARC_ANGLE, true, mPaint);
+    }
+
+    private void drawMiddleArc(Canvas canvas) {
+        mPaint.setColor(0xff828282);
+        mPaint.setStyle(Paint.Style.STROKE);
+        int middleArcSize = getMeasuredHeight() / 2;
+        RectF rectF = new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - middleArcSize) / 2,
+                DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + getMeasuredHeight() * 3 / 8, (getMeasuredHeight() + middleArcSize) / 2);
+        canvas.drawArc(rectF, -ARC_ANGLE / 2f, ARC_ANGLE, false, mPaint);
+    }
+
+    private void drawBigArc(Canvas canvas) {
+        mPaint.setColor(0xff828282);
+        mPaint.setStyle(Paint.Style.STROKE);
+        int bigArcSize = getMeasuredHeight() * 3 / 4;
+        RectF rectF = new RectF(DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP), (getMeasuredHeight() - bigArcSize) / 2,
+                DensityUtil.dip2px(getContext(), ARC_LEFT_MARGIN_IN_DP) + getMeasuredHeight() / 2, (getMeasuredHeight() + bigArcSize) / 2);
+        canvas.drawArc(rectF, -ARC_ANGLE / 2f, ARC_ANGLE, false, mPaint);
     }
 
     private void drawProgress(Canvas canvas) {
 
-        int strokeWidth = DensityUtil.dip2px(getContext(), 2);
+        float lineCenter = strokeWidth / 2f;
         mProgressRectWidth += mMinAdd;
-        mProgressRectWidth = mProgressRectWidth > getMeasuredWidth() - strokeWidth ? getMeasuredWidth() - strokeWidth : mProgressRectWidth;
-        mPaint.setColor(0xffebebeb);
+        mProgressRectWidth = mProgressRectWidth > getMeasuredWidth() - lineCenter ? getMeasuredWidth() - lineCenter : mProgressRectWidth;
+        mPaint.setColor(0xffdddddd);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.save();
         Path path = new Path();
-        path.addRoundRect(new RectF(0, 0, getMeasuredWidth(), getMeasuredHeight()),
-                getMeasuredHeight() / 6, getMeasuredHeight() / 6, Path.Direction.CW);
+        path.addRoundRect(new RectF(lineCenter, lineCenter, getMeasuredWidth() - lineCenter, getMeasuredHeight() - lineCenter),
+                getMeasuredHeight() / 6f - lineCenter, getMeasuredHeight() / 6f - lineCenter, Path.Direction.CW);
         canvas.clipPath(path);
-        canvas.drawRect(new RectF(strokeWidth / 2f, strokeWidth / 2f, (float) mProgressRectWidth - strokeWidth, getMeasuredHeight() - strokeWidth), mPaint);
+        canvas.drawRect(new RectF(0, 0, (float) mProgressRectWidth, getMeasuredHeight()), mPaint);
         canvas.restore();
     }
 }
