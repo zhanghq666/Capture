@@ -1,7 +1,7 @@
 package com.candy.capture.activity;
 
 import android.os.Bundle;
-import android.support.v7.widget.CardView;
+import androidx.cardview.widget.CardView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -12,7 +12,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -22,7 +21,7 @@ import com.candy.capture.core.DBHelper;
 import com.candy.capture.fragment.ContentListFragment;
 import com.candy.capture.util.CommonTools;
 import com.candy.capture.util.DensityUtil;
-import com.candy.capture.util.TipsUtil;
+import com.jaeger.library.StatusBarUtil;
 
 import java.util.ArrayList;
 
@@ -74,6 +73,9 @@ public class SearchActivity extends BaseActivity implements View.OnClickListener
         } else {
             mContentListFragment = (ContentListFragment) getSupportFragmentManager().findFragmentByTag("content_list");
         }
+
+        StatusBarUtil.setLightMode(this);
+        StatusBarUtil.setColor(this, getResources().getColor(R.color.colorWhite), 0);
     }
 
     private void findView() {

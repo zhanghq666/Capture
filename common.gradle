@@ -1,0 +1,9 @@
+//通用编译配置
+ext {
+    compileSdkVersion=28
+    buildToolsVersion='28.0.1'
+    minSdkVersion=16
+    targetSdkVersion=28
+
+
+}

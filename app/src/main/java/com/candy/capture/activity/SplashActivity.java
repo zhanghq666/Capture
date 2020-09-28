@@ -20,6 +20,7 @@ import android.widget.ImageView;
 import com.candy.capture.R;
 import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.service.LocationService;
+import com.jaeger.library.StatusBarUtil;
 
 public class SplashActivity extends BaseActivity {
 
@@ -152,6 +153,8 @@ public class SplashActivity extends BaseActivity {
 
         findView();
         setView();
+
+        StatusBarUtil.setTranslucent(this, 0);
     }
 
     private void findView() {

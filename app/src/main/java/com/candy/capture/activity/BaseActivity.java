@@ -2,9 +2,11 @@ package com.candy.capture.activity;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
+import com.candy.capture.R;
 import com.candy.capture.core.BackStackManager;
+import com.jaeger.library.StatusBarUtil;
 import com.umeng.analytics.MobclickAgent;
 
 /**
@@ -21,6 +23,9 @@ public class BaseActivity extends AppCompatActivity {
         mContext = this;
 
         BackStackManager.getInstance().push(this);
+
+        StatusBarUtil.setDarkMode(this);
+        StatusBarUtil.setColor(this, getResources().getColor(R.color.colorPrimary), 0);
     }
 
     @Override

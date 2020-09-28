@@ -1,13 +1,9 @@
 package com.candy.capture.adapter;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
-import android.provider.MediaStore;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.util.TimeUtils;
+
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -15,11 +11,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.candy.capture.R;
-import com.candy.capture.activity.MainActivity;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.customview.AudioView;
 import com.candy.capture.model.Content;
-import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.util.GlideImageLoader;
 import com.candy.capture.util.TimeUtil;
 
