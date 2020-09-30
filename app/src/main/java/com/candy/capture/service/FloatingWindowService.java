@@ -21,8 +21,7 @@ import com.candy.capture.IFloatAidlInterface;
 import com.candy.capture.R;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.SharedPreferenceManager;
-import com.candy.capture.util.LogUtil;
-import com.candy.capture.util.TipsUtil;
+import com.candy.commonlibrary.utils.LogUtil;
 
 import java.lang.reflect.Field;
 

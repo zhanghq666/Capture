@@ -19,8 +19,8 @@ import com.candy.capture.R;
 import com.candy.capture.core.ConstantValues;
 import com.candy.capture.core.DBHelper;
 import com.candy.capture.fragment.ContentListFragment;
-import com.candy.capture.util.CommonTools;
-import com.candy.capture.util.DensityUtil;
+import com.candy.commonlibrary.utils.CommonTools;
+import com.candy.commonlibrary.utils.DensityUtil;
 import com.jaeger.library.StatusBarUtil;
 
 import java.util.ArrayList;

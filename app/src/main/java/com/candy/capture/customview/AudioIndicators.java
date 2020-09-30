@@ -1,14 +1,11 @@
 package com.candy.capture.customview;
 
-import android.animation.Animator;
-import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
@@ -16,9 +13,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 
 import com.candy.capture.R;
-import com.candy.capture.util.DensityUtil;
-
-import java.util.ArrayList;
+import com.candy.commonlibrary.utils.DensityUtil;
 
 /**
  * Created by zhanghq on 2016/11/15.

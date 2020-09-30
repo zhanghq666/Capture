@@ -8,15 +8,14 @@ import android.graphics.SurfaceTexture;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.os.Build;
-import androidx.appcompat.app.ActionBar;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -24,16 +23,19 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.appcompat.app.ActionBar;
+
 import com.candy.capture.R;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.util.TimeUtil;
 import com.candy.commonlibrary.utils.DensityUtil;
 import com.candy.commonlibrary.utils.LogUtil;
 import com.candy.commonlibrary.utils.TipsUtil;
+import com.candy.videoplayer.AliVideoView;
 
 import java.io.IOException;
 
-public class VideoPlayerActivity extends BaseActivity implements View.OnClickListener {
+public class AliPlayerActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "VideoPlayerActivity";
 
     public static final String EXTRA_MEDIA_PATH_KEY = "extra_media_path";
@@ -65,7 +67,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
             // Note that some of these constants are new as of API 16 (Jelly Bean)
             // and API 19 (KitKat). It is safe to use them, as they are inlined
             // at compile-time and do nothing on earlier devices.
-            mSurfaceTv.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+            mAliVideoView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -96,8 +98,8 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     private final Runnable mUpdateProgressRunnable = new Runnable() {
         @Override
         public void run() {
-            if (mMediaPlayer != null && isPlayable()) {
-                mProgressSb.setProgress(mMediaPlayer.getCurrentPosition());
+            if (mAliVideoView != null /*&& isPlayable()*/) {
+                mProgressSb.setProgress((int) mAliVideoView.getCurrentPosition());
 
                 mHandler.removeCallbacks(mUpdateProgressRunnable);
                 mHandler.postDelayed(mUpdateProgressRunnable, 100);
@@ -119,7 +121,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         }
     };
 
-    private TextureView mSurfaceTv;
+    private AliVideoView mAliVideoView;
     private View mProgressView;
     private View mControllerView;
     private boolean mControllerVisible;
@@ -132,8 +134,8 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     private TextView mCurrentProgressTv;
     private TextView mDurationTv;
 
-    private MediaPlayer mMediaPlayer;
-    private MediaPlayState mPlayState;
+//    private MediaPlayer mMediaPlayer;
+//    private MediaPlayState mPlayState;
     private String mMediaFilePath;
 
 //    private TimeCountThread mTimeCountThread;
@@ -159,7 +161,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
             }
         }
 
-        setContentView(R.layout.activity_video_player);
+        setContentView(R.layout.activity_ali_player);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -186,7 +188,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     private void findView() {
         mProgressView = findViewById(R.id.rl_progress);
         mControllerView = findViewById(R.id.rl_controller);
-        mSurfaceTv = (TextureView) findViewById(R.id.tv_surface);
+        mAliVideoView = findViewById(R.id.aliVideoView);
         mPlayIv = (ImageView) findViewById(R.id.iv_play);
         mBackwardIv = (ImageView) findViewById(R.id.iv_backward);
         mForwardIv = (ImageView) findViewById(R.id.iv_forward);
@@ -196,37 +198,10 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     }
 
     private void setView() {
-        mSurfaceTv.setOnClickListener(new View.OnClickListener() {
+        mAliVideoView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 toggle();
-            }
-        });
-        mSurfaceTv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                LogUtil.d(TAG, "onSurfaceTextureAvailable");
-                if (mMediaPlayer == null || mPlayState == MediaPlayState.IDLE) {
-                    initMediaPlayer();
-                }
-                mMediaPlayer.setSurface(new Surface(surface));
-//                playMedia();
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-                LogUtil.d(TAG, "onSurfaceTextureSizeChanged width = " + width + " height = " + height);
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                LogUtil.d(TAG, "onSurfaceTextureDestroyed");
-                releaseMedia();
-                return true;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
             }
         });
 
@@ -238,11 +213,11 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    mMediaPlayer.seekTo(seekBar.getProgress());
+                    mAliVideoView.seekTo(seekBar.getProgress());
 
                     delayedHide(AUTO_HIDE_DELAY_MILLIS);
                 }
-                mCurrentProgressTv.setText(TimeUtil.formatDuration(mMediaPlayer.getCurrentPosition() / 1000));
+                mCurrentProgressTv.setText(TimeUtil.formatDuration(mAliVideoView.getCurrentPosition() / 1000));
             }
 
             @Override
@@ -257,19 +232,13 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         });
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        initMediaPlayer();
-//    }
-
     @Override
     protected void onPause() {
         super.onPause();
 
-        if (MediaPlayState.STARTED == mPlayState) {
+//        if (MediaPlayState.STARTED == mPlayState) {
             pauseMedia();
-        }
+//        }
     }
 
     @Override
@@ -328,7 +297,7 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     @SuppressLint("InlinedApi")
     private void show() {
         // Show the system bar
-        mSurfaceTv.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        mAliVideoView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         mControllerVisible = true;
 
@@ -348,20 +317,20 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         }
     }
 
-    private boolean isPlayable() {
-        return mPlayState == MediaPlayState.PREPARED || mPlayState == MediaPlayState.STARTED || mPlayState == MediaPlayState.PAUSED;
-    }
+//    private boolean isPlayable() {
+//        return mPlayState == MediaPlayState.PREPARED || mPlayState == MediaPlayState.STARTED || mPlayState == MediaPlayState.PAUSED;
+//    }
 
     private void initMediaPlayer() {
         LogUtil.d(TAG, "initMediaPlayer");
-        if (mMediaPlayer == null) {
-            mMediaPlayer = new MediaPlayer();
-            mPlayState = MediaPlayState.IDLE;
-            mMediaPlayer.setScreenOnWhilePlaying(true);
-            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+//        if (mMediaPlayer == null) {
+//            mMediaPlayer = new MediaPlayer();
+//            mPlayState = MediaPlayState.IDLE;
+//            mMediaPlayer.setScreenOnWhilePlaying(true);
+        mAliVideoView.setOnCompletionListener(new AliVideoView.OnCompletionListener() {
                 @Override
-                public void onCompletion(MediaPlayer mp) {
-                    mPlayState = MediaPlayState.COMPLETED;
+                public void onCompletion() {
+//                    mPlayState = MediaPlayState.COMPLETED;
 
                     mPlayIv.setImageResource(R.mipmap.ic_play);
                     int padding = DensityUtil.dip2px(mContext, 15);
@@ -373,94 +342,62 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
                     show();
                 }
             });
-            mMediaPlayer.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
+        mAliVideoView.setOnVideoSizeChangedListener(new AliVideoView.OnVideoSizeChangedListener() {
                 @Override
-                public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
-                    LogUtil.d(TAG, "MediaPlayer onVideoSizeChanged width = " + width + " height = " + height);
-
-                    if (isPlayable()) {
+                public void onVideoSizeChanged(int width, int height) {
+//                    if (isPlayable()) {
                         mCurrentProgressTv.setText(TimeUtil.formatDuration(0));
-                        mDurationTv.setText(TimeUtil.formatDuration(mMediaPlayer.getDuration() / 1000));
-                        mProgressSb.setProgress(mMediaPlayer.getCurrentPosition());
-                        mProgressSb.setMax(mMediaPlayer.getDuration());
-                    }
+                        mDurationTv.setText(TimeUtil.formatDuration(mAliVideoView.getDuration() / 1000));
+                        mProgressSb.setProgress((int) mAliVideoView.getCurrentPosition());
+                        mProgressSb.setMax((int) mAliVideoView.getDuration());
+//                    }
 
-                    configSurfaceSize(width, height);
                 }
             });
-            mMediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+//            mMediaPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+//                @Override
+//                public void onSeekComplete(MediaPlayer mp) {
+//                    LogUtil.d(TAG, "MediaPlayer onSeekComplete ");
+//                }
+//            });
+        mAliVideoView.setOnErrorListener(new AliVideoView.OnErrorListener() {
                 @Override
-                public void onSeekComplete(MediaPlayer mp) {
-                    LogUtil.d(TAG, "MediaPlayer onSeekComplete ");
+                public void onError(int what, String msg) {
+//                    mPlayState = MediaPlayState.ERROR;
+//
+//                    mp.reset();
+//                    mPlayState = MediaPlayState.IDLE;
+//
+//                    return true;
                 }
             });
-            mMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    LogUtil.e(TAG, "MediaPlayer onError");
-                    mPlayState = MediaPlayState.ERROR;
-
-                    mp.reset();
-                    mPlayState = MediaPlayState.IDLE;
-
-                    return true;
-                }
-            });
-            mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    LogUtil.e(TAG, "MediaPlayer onPrepared");
-                    mPlayState = MediaPlayState.PREPARED;
-                    playMedia();
-                }
-            });
-        }
+//            mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+//                @Override
+//                public void onPrepared(MediaPlayer mp) {
+//                    LogUtil.e(TAG, "MediaPlayer onPrepared");
+//                    mPlayState = MediaPlayState.PREPARED;
+//                    playMedia();
+//                }
+//            });
+//        }
         setMediaPlayerSource();
         prepareMediaPlayer();
     }
 
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        // 这个方法很重要
-        Point point = DensityUtil.getScreenRealSize(this);
-        LogUtil.d(TAG, "onConfigurationChanged size = " + point);
-
-        if (mMediaPlayer.getVideoWidth() > 0 && mMediaPlayer.getVideoHeight() > 0) {
-            configSurfaceSize(mMediaPlayer.getVideoWidth(), mMediaPlayer.getVideoHeight());
-        }
-    }
-
-    private void configSurfaceSize(int width, int height) {
-        ViewGroup.LayoutParams layoutParams = mSurfaceTv.getLayoutParams();
-        Point point = DensityUtil.getScreenRealSize(this);
-        int screenWidth = point.x;
-        int screenHeight = point.y;
-//        int screenWidth = mContext.getResources().getDisplayMetrics().widthPixels;
-//        int screenHeight = mContext.getResources().getDisplayMetrics().heightPixels;
-        if (((double) screenWidth / width) * height > screenHeight) {
-            layoutParams.width = (int) (((double) screenHeight / height) * width);
-            layoutParams.height = screenHeight;
-        } else {
-            layoutParams.width = screenWidth;
-            layoutParams.height = (int) (((double) screenWidth / width) * height);
-            LogUtil.d(TAG, "onConfigurationChanged width = " + layoutParams.width + " height = " + layoutParams.height);
-        }
-    }
-
     private void setMediaPlayerSource() {
-        try {
-//            mMediaFilePath = "http://oss.littlehotspot.com/media/resource/h8YcE7debZ.mp4";
-            mMediaPlayer.setDataSource(mMediaFilePath);
-            mPlayState = MediaPlayState.INITIALIZED;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+            mMediaFilePath = "http://oss.littlehotspot.com/media/resource/h8YcE7debZ.mp4";
+            mAliVideoView.setMediaSource(mMediaFilePath);
+        mHandler.post(mUpdateProgressRunnable);
+//            mPlayState = MediaPlayState.INITIALIZED;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void prepareMediaPlayer() {
-        mMediaPlayer.prepareAsync();
-        mPlayState = MediaPlayState.PREPARING;
+//        mMediaPlayer.prepareAsync();
+//        mPlayState = MediaPlayState.PREPARING;
     }
 
     private void playMedia() {
@@ -468,8 +405,12 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         int padding = DensityUtil.dip2px(this, 15);
         mPlayIv.setPadding(padding, padding, padding, padding);
 
-        mMediaPlayer.start();
-        mPlayState = MediaPlayState.STARTED;
+        if (mAliVideoView.isPaused()) {
+            mAliVideoView.start();
+        } else if (mAliVideoView.isCompleted()) {
+            setMediaPlayerSource();
+        }
+//        mPlayState = MediaPlayState.STARTED;
 
         mHandler.removeCallbacks(mUpdateProgressRunnable);
         mHandler.post(mUpdateProgressRunnable);
@@ -491,8 +432,8 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         int paddingDiff = DensityUtil.dip2px(this, 2);
         mPlayIv.setPadding(padding + paddingDiff, padding, padding - paddingDiff, padding);
 
-        mMediaPlayer.pause();
-        mPlayState = MediaPlayState.PAUSED;
+        mAliVideoView.pause();
+//        mPlayState = MediaPlayState.PAUSED;
 
         mHandler.removeCallbacks(mUpdateProgressRunnable);
 //        if (mTimeCountThread != null) {
@@ -501,20 +442,20 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
     }
 
     private void stopMedia() {
-        mMediaPlayer.stop();
-        mPlayState = MediaPlayState.STOPPED;
+        mAliVideoView.stop();
+//        mPlayState = MediaPlayState.STOPPED;
 
     }
 
     private void releaseMedia() {
-        if (mMediaPlayer != null) {
-            if (MediaPlayState.STARTED == mPlayState || MediaPlayState.PAUSED == mPlayState) {
-                stopMedia();
-            }
-            mMediaPlayer.release();
-            mPlayState = MediaPlayState.END;
-            mMediaPlayer = null;
-        }
+//        if (mMediaPlayer != null) {
+//            if (MediaPlayState.STARTED == mPlayState || MediaPlayState.PAUSED == mPlayState) {
+//                stopMedia();
+//            }
+            mAliVideoView.release();
+//            mPlayState = MediaPlayState.END;
+//            mMediaPlayer = null;
+//        }
 
         mHandler.removeCallbacks(mUpdateProgressRunnable);
 //        if (mTimeCountThread != null) {
@@ -527,29 +468,29 @@ public class VideoPlayerActivity extends BaseActivity implements View.OnClickLis
         delayedHide(AUTO_HIDE_DELAY_MILLIS);
         switch (v.getId()) {
             case R.id.iv_play:
-                if (MediaPlayState.PAUSED == mPlayState || MediaPlayState.COMPLETED == mPlayState) {
+                if (mAliVideoView.isPaused() || mAliVideoView.isCompleted()) {
                     playMedia();
-                } else if (MediaPlayState.STARTED == mPlayState) {
+                } else if (mAliVideoView.isPlaying()) {
                     pauseMedia();
                 }
                 break;
             case R.id.iv_backward:
-                if (MediaPlayState.PAUSED == mPlayState || MediaPlayState.COMPLETED == mPlayState || MediaPlayState.STARTED == mPlayState) {
-                    int seekTo = mMediaPlayer.getCurrentPosition() - 10 * 1000;
+//                if (MediaPlayState.PAUSED == mPlayState || MediaPlayState.COMPLETED == mPlayState || MediaPlayState.STARTED == mPlayState) {
+                    long seekTo = mAliVideoView.getCurrentPosition() - 10 * 1000;
                     if (seekTo > 0) {
-                        mMediaPlayer.seekTo(seekTo);
-                        mProgressSb.setProgress(seekTo);
+                        mAliVideoView.seekTo(seekTo);
+                        mProgressSb.setProgress((int) seekTo);
                     }
-                }
+//                }
                 break;
             case R.id.iv_forward:
-                if (MediaPlayState.PAUSED == mPlayState || MediaPlayState.COMPLETED == mPlayState || MediaPlayState.STARTED == mPlayState) {
-                    int seekTo = mMediaPlayer.getCurrentPosition() + 10 * 1000;
-                    if (seekTo < mMediaPlayer.getDuration()) {
-                        mMediaPlayer.seekTo(seekTo);
-                        mProgressSb.setProgress(seekTo);
+//                if (MediaPlayState.PAUSED == mPlayState || MediaPlayState.COMPLETED == mPlayState || MediaPlayState.STARTED == mPlayState) {
+                    long seekTo1 = mAliVideoView.getCurrentPosition() + 10 * 1000;
+                    if (seekTo1 < mAliVideoView.getDuration()) {
+                        mAliVideoView.seekTo(seekTo1);
+                        mProgressSb.setProgress((int) seekTo1);
                     }
-                }
+//                }
                 break;
         }
     }

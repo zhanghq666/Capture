@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.candy.capture.R;
+import com.candy.capture.activity.AliPlayerActivity;
 import com.candy.capture.activity.VideoPlayerActivity;
 import com.candy.capture.adapter.ContentListAdapter;
 import com.candy.capture.core.DBHelper;
@@ -24,8 +25,8 @@ import com.candy.capture.customview.ContentListDivider;
 import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
-import com.candy.capture.util.LogUtil;
-import com.candy.capture.util.TipsUtil;
+import com.candy.commonlibrary.utils.LogUtil;
+import com.candy.commonlibrary.utils.TipsUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -351,9 +352,12 @@ public class ContentListFragment extends Fragment implements ContentListAdapter.
             stopMedia();
         }
 
-        Intent intent = new Intent(getContext(), VideoPlayerActivity.class);
-        intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList.get(position).getMediaFilePath());
+        Intent intent = new Intent(getContext(), AliPlayerActivity.class);
+        intent.putExtra(AliPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList.get(position).getMediaFilePath());
         startActivity(intent);
+//        Intent intent = new Intent(getContext(), VideoPlayerActivity.class);
+//        intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList.get(position).getMediaFilePath());
+//        startActivity(intent);
     }
 
     private void gotoEditMode() {

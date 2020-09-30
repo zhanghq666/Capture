@@ -1,0 +1,91 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/colorBlack"
+                tools:context="com.candy.capture.activity.VideoPlayerActivity">
+
+    <!-- The primary full-screen view. This can be replaced with whatever view
+         is needed to present your content, e.g. VideoView, SurfaceView,
+         TextureView, etc. -->
+    <com.candy.videoplayer.AliVideoView
+        android:id="@+id/aliVideoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"/>
+
+    <RelativeLayout
+        android:id="@+id/rl_controller"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <ImageView
+            android:id="@+id/iv_play"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerInParent="true"
+            android:layout_marginLeft="30dp"
+            android:layout_marginRight="30dp"
+            android:background="@drawable/play_btn_background"
+            android:padding="15dp"
+            android:src="@mipmap/ic_pause"/>
+
+        <ImageView
+            android:id="@+id/iv_forward"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_toRightOf="@id/iv_play"
+            android:background="@drawable/play_btn_background"
+            android:paddingLeft="17dp"
+            android:paddingRight="13dp"
+            android:src="@mipmap/ic_forward"/>
+
+        <ImageView
+            android:id="@+id/iv_backward"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_toLeftOf="@id/iv_play"
+            android:background="@drawable/play_btn_background"
+            android:paddingLeft="13dp"
+            android:paddingRight="17dp"
+            android:src="@drawable/drawable_backward"/>
+    </RelativeLayout>
+
+    <!-- This FrameLayout insets its children based on system windows using
+         android:fitsSystemWindows. -->
+    <RelativeLayout
+        android:id="@+id/rl_progress"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="20dp"
+        android:fitsSystemWindows="true">
+
+        <TextView
+            android:id="@+id/tv_current_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:textColor="@color/colorWhite"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:id="@+id/tv_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:textColor="@color/colorWhite"
+            android:textSize="12sp"/>
+
+        <SeekBar
+            android:id="@+id/seek_bar"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@id/tv_duration"
+            android:layout_toRightOf="@id/tv_current_progress"/>
+    </RelativeLayout>
+
+</RelativeLayout>

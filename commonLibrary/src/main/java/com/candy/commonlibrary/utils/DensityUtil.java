@@ -1,4 +1,4 @@
-package com.candy.capture.util;
+package com.candy.commonlibrary.utils;
 
 import android.app.Activity;
 import android.content.Context;

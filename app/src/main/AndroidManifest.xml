@@ -87,6 +87,11 @@
             android:label="">
         </activity>
         <activity
+            android:name=".activity.AliPlayerActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="">
+        </activity>
+        <activity
             android:name=".activity.SearchActivity"
             android:label=""
             android:screenOrientation="portrait"

@@ -8,7 +8,7 @@
 //import android.util.AttributeSet;
 //import android.view.View;
 //
-//import com.candy.capture.util.DensityUtil;
+//import com.candy.commonlibrary.utils.DensityUtil;
 //
 //import java.util.ArrayList;
 //import java.util.Random;

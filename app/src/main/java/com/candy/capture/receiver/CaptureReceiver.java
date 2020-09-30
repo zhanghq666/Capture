@@ -7,7 +7,6 @@ import android.util.Log;
 
 import com.candy.capture.core.SharedPreferenceManager;
 import com.candy.capture.service.FloatingWindowService;
-import com.candy.capture.util.TipsUtil;
 
 public class CaptureReceiver extends BroadcastReceiver {
     private static final String TAG = "CaptureReceiver";

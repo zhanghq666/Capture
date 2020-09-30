@@ -6,14 +6,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.candy.capture.model.Content;
-import com.candy.capture.util.LogUtil;
+import com.candy.commonlibrary.utils.LogUtil;
 
 import java.util.ArrayList;
-
-import static com.candy.capture.core.DBHelper.CONTENT_COLUMN_CITY_NAME;
 
 /**
  * Created by zhanghq on 2016/10/19.

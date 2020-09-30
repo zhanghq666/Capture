@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +19,10 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import androidx.annotation.NonNull;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+
+import com.candy.commonlibrary.utils.DensityUtil;
+import com.candy.commonlibrary.utils.LogUtil;
+import com.candy.commonlibrary.utils.TipsUtil;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
@@ -27,7 +30,6 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 
@@ -39,11 +41,7 @@ import com.candy.capture.fragment.ContentListFragment;
 import com.candy.capture.service.FloatingWindowService;
 import com.candy.capture.service.LocationService;
 import com.candy.capture.model.Content;
-import com.candy.capture.util.DensityUtil;
 import com.candy.capture.util.FileUtil;
-import com.candy.capture.util.LogUtil;
-import com.candy.capture.util.TipsUtil;
-import com.jaeger.library.StatusBarUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -157,8 +155,9 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
         // 权限未拿到时从Main去请求权限、启动定位Service，拿到以后从Splash启动
         // 低版本直接定位，高版本请求权限通过后定位
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
                 startLocationService();
             }
         } else {
@@ -208,19 +207,18 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
     //region 权限相关
     @TargetApi(Build.VERSION_CODES.M)
     private void getWholePermissions() {
-        // 权限未拿到时从Main去请求权限、启动定位Service，拿到以后从Splash启动
         // 低版本直接定位，高版本请求权限通过后定位
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ArrayList<String> permissions = new ArrayList<String>();
-            /***
-             * 定位权限为必须权限，用户如果禁止，则每次进入都会申请
-             */
             // 定位精确位置
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
             }
             if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            }
+            if (checkSelfPermission(Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
                 permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
             }
 
@@ -237,7 +235,7 @@ public class MainActivity extends BaseActivity implements ContentListFragment.On
             addPermission(permissions, Manifest.permission.RECORD_AUDIO);
 
             if (permissions.size() > 0) {
-                requestPermissions(permissions.toArray(new String[permissions.size()]), WHOLE_PERMISSION_REQUEST);
+                requestPermissions(permissions.toArray(new String[0]), WHOLE_PERMISSION_REQUEST);
             }
         }
     }

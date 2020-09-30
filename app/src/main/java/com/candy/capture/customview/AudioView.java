@@ -1,22 +1,17 @@
 package com.candy.capture.customview;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
-import android.graphics.Region;
-import android.media.session.PlaybackState;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
-import com.candy.capture.R;
-import com.candy.capture.util.DensityUtil;
+import com.candy.commonlibrary.utils.DensityUtil;
+
 
 /**
  * Created by zhanghq on 2016/11/1.

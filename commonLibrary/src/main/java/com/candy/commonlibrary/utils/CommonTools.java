@@ -1,4 +1,4 @@
-package com.candy.capture.util;
+package com.candy.commonlibrary.utils;
 
 import android.app.Activity;
 import android.content.Context;
@@ -11,7 +11,6 @@ import android.net.wifi.WifiManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;

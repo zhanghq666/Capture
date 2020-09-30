@@ -23,9 +23,9 @@ import com.candy.capture.customview.ImageViewerDialog;
 import com.candy.capture.model.Content;
 import com.candy.capture.model.MediaPlayState;
 import com.candy.capture.util.GlideImageLoader;
-import com.candy.capture.util.LogUtil;
 import com.candy.capture.util.TimeUtil;
-import com.candy.capture.util.TipsUtil;
+import com.candy.commonlibrary.utils.LogUtil;
+import com.candy.commonlibrary.utils.TipsUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;

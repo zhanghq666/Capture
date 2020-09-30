@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 
 import com.candy.capture.R;
-import com.candy.capture.util.DensityUtil;
+import com.candy.commonlibrary.utils.DensityUtil;
 
 /**
  * Created by zhanghq on 2016/10/30.

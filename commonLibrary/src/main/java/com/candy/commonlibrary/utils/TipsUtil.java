@@ -1,4 +1,4 @@
-package com.candy.capture.util;
+package com.candy.commonlibrary.utils;
 
 import android.content.Context;
 import com.google.android.material.snackbar.Snackbar;
