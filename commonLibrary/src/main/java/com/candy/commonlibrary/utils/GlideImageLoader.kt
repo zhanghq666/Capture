@@ -1,14 +1,15 @@
-package com.candy.capture.util
+package com.candy.commonlibrary.utils
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.widget.ImageView
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.resource.bitmap.FileDescriptorBitmapDecoder
-import com.bumptech.glide.load.resource.bitmap.VideoBitmapDecoder
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.BitmapImageViewTarget
+import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
+
 
 /**
  * @Description
@@ -35,70 +36,59 @@ class GlideImageLoader private constructor(){
     }
 
     fun setGlobalPlaceholderResId(globalPlaceholderResId: Int) {
-        GlideImageLoader.globalPlaceholderResId = globalPlaceholderResId
+        Companion.globalPlaceholderResId = globalPlaceholderResId
     }
 
     fun setGlobalFailedResId(globalFailedResId: Int) {
-        GlideImageLoader.globalFailedResId = globalFailedResId
+        Companion.globalFailedResId = globalFailedResId
     }
 
-    fun loadImage(context: Context?, imgPath: String?, imageView: ImageView?) {
-        if (context == null) {
-            return
-        }
+    fun loadImage(context: Context, imgPath: String, imageView: ImageView) {
         val appContext = context.applicationContext
         loadImage(appContext, imgPath, imageView, globalPlaceholderResId, globalFailedResId)
     }
 
-    fun loadVideoThumbnail(context: Context?, videoPath: String?, imageView: ImageView?) {
-        if (context == null) {
-            return
-        }
+    fun loadVideoThumbnail(context: Context, videoPath: String, imageView: ImageView) {
         val appContext = context.applicationContext
-        val bitmapPool = Glide.get(appContext).bitmapPool
-        val microSecond = 1 // 6th second as an example
-        val videoBitmapDecoder = VideoBitmapDecoder(microSecond)
-        val fileDescriptorBitmapDecoder = FileDescriptorBitmapDecoder(videoBitmapDecoder, bitmapPool, DecodeFormat.PREFER_ARGB_8888)
+        val options = RequestOptions()
+                .frame(1)
+                .centerCrop()
         Glide.with(appContext)
+                .asBitmap()
                 .load(videoPath)
-                .asBitmap() //                        .override(50,50)// Example
-                .videoDecoder(fileDescriptorBitmapDecoder)
+                .apply(options)
                 .into(imageView)
     }
 
-    fun loadRoundImage(context: Context?, imgPath: String?, imageView: ImageView, defaultId: Int) {
-        if (context == null) {
-            return
-        }
+    fun loadRoundImage(context: Context, imgPath: String?, imageView: ImageView, defaultId: Int) {
         val appContext = context.applicationContext
         loadRoundImage(appContext, imgPath, imageView, defaultId, defaultId)
     }
 
-    fun loadImage(context: Context?, imgPath: String?, imageView: ImageView?, placeholderResId: Int, failedResId: Int) {
-        if (context == null) {
-            return
-        }
+    fun loadImage(context: Context, imgPath: String?, imageView: ImageView, placeholderResId: Int, failedResId: Int) {
         val appContext = context.applicationContext
-        Glide.with(appContext)
-                .load(imgPath)
-                .placeholder(placeholderResId)
-                .error(failedResId)
-                .crossFade()
-                .into(imageView)
-    }
-
-    fun loadRoundImage(context: Context?, imgPath: String?, imageView: ImageView, placeholderResId: Int, failedResId: Int) {
-        if (context == null) {
-            return
-        }
-        val appContext = context.applicationContext
-        Glide.with(appContext).load(imgPath)
-                .asBitmap()
+        val options = RequestOptions()
                 .placeholder(placeholderResId)
                 .error(failedResId)
                 .centerCrop()
+        val drawableCrossFadeFactory = DrawableCrossFadeFactory.Builder().setCrossFadeEnabled(true).build()
+        Glide.with(appContext)
+                .load(imgPath)
+                .apply(options)
+                .transition(DrawableTransitionOptions.with(drawableCrossFadeFactory))
+                .into(imageView)
+    }
+
+    fun loadRoundImage(context: Context, imgPath: String?, imageView: ImageView, placeholderResId: Int, failedResId: Int) {
+        val appContext = context.applicationContext
+        val options = RequestOptions()
+                .placeholder(placeholderResId)
+                .error(failedResId)
+                .centerCrop()
+        Glide.with(appContext).asBitmap().load(imgPath)
+                .apply(options)
                 .into(object : BitmapImageViewTarget(imageView) {
-                    override fun setResource(resource: Bitmap) {
+                    override fun setResource(resource: Bitmap?) {
                         val circularBitmapDrawable = RoundedBitmapDrawableFactory.create(context.resources, resource)
                         circularBitmapDrawable.isCircular = true
                         imageView.setImageDrawable(circularBitmapDrawable)
@@ -106,13 +96,18 @@ class GlideImageLoader private constructor(){
                 })
     }
 
-    fun loadImageWithNoAnimate(context: Context?, imgPath: String?, imageView: ImageView?, placeholderResId: Int, failedResId: Int) {
-        Glide.with(context)
-                .load(imgPath)
+    fun loadImageWithNoAnimate(context: Context, imgPath: String?, imageView: ImageView, placeholderResId: Int, failedResId: Int) {
+        val appContext = context.applicationContext
+        val drawableCrossFadeFactory = DrawableCrossFadeFactory.Builder().setCrossFadeEnabled(true).build()
+        val options = RequestOptions()
                 .placeholder(placeholderResId)
                 .error(failedResId)
+                .centerCrop()
                 .dontAnimate()
-                .crossFade()
+        Glide.with(appContext)
+                .load(imgPath)
+                .apply(options)
+                .transition(DrawableTransitionOptions.with(drawableCrossFadeFactory))
                 .into(imageView)
     }
 }

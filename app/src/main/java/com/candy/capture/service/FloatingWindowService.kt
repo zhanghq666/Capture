@@ -1,8 +1,12 @@
 package com.candy.capture.service
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
@@ -12,11 +16,14 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageButton
 import android.widget.RelativeLayout
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import com.candy.capture.IFloatAidlInterface
 import com.candy.capture.R
 import com.candy.capture.core.ConstantValues
 import com.candy.capture.core.SharedPreferenceManager
 import com.candy.commonlibrary.utils.LogUtil
+
 
 /**
  * @Description
@@ -25,15 +32,15 @@ import com.candy.commonlibrary.utils.LogUtil
  */
 class FloatingWindowService : Service() {
     companion object {
-        private val TAG = "FloatingWindowService"
+        private const val TAG = "FloatingWindowService"
 
-        val EXTRA_TOGGLE = "extra_toggle"
+        const val EXTRA_TOGGLE = "extra_toggle"
     }
 
     var wmParams: WindowManager.LayoutParams? = null
     var mWindowManager: WindowManager? = null
-    private var mFloatLayout: RelativeLayout? = null
-    private var mHomeBtn: ImageButton? = null
+    private lateinit var mFloatLayout: RelativeLayout
+    private lateinit var mHomeBtn: ImageButton
 
     private var mIsAdded = false
 
@@ -50,9 +57,13 @@ class FloatingWindowService : Service() {
         if (Build.VERSION.SDK_INT < 18) {
             startForeground(ConstantValues.FLOAT_SERVICE_ID, Notification()) //API < 18 ，此方法能有效隐藏Notification上的图标
         } else {
-            val innerIntent = Intent(this, GrayInnerService::class.java)
-            startService(innerIntent)
-            startForeground(ConstantValues.FLOAT_SERVICE_ID, Notification())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startMyOwnForeground()
+            } else {
+                val innerIntent = Intent(this, GrayInnerService::class.java)
+                startService(innerIntent)
+                startForeground(ConstantValues.FLOAT_SERVICE_ID, Notification())
+            }
         }
         if (SharedPreferenceManager.getInstance(this).isAllowFastCapture()) {
             addFloatView()
@@ -60,6 +71,24 @@ class FloatingWindowService : Service() {
             removeFloatView()
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startMyOwnForeground() {
+        val chan = NotificationChannel("capture", "fast_capture", NotificationManager.IMPORTANCE_NONE)
+        chan.lightColor = Color.BLUE
+        chan.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        val manager = (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+        manager.createNotificationChannel(chan)
+
+        val notificationBuilder = NotificationCompat.Builder(this, "capture")
+        val notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("App is running in background")
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build()
+        startForeground(ConstantValues.FLOAT_SERVICE_ID, notification)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -73,7 +102,7 @@ class FloatingWindowService : Service() {
         return InnerBinder()
     }
 
-    fun addFloatView() {
+    private fun addFloatView() {
         if (mIsAdded) return
         wmParams = WindowManager.LayoutParams()
         //获取的是WindowManagerImpl.CompatModeWrapper
@@ -95,9 +124,10 @@ class FloatingWindowService : Service() {
         wmParams!!.height = WindowManager.LayoutParams.WRAP_CONTENT
 
         //获取浮动窗口视图所在布局
-        mFloatLayout = LayoutInflater.from(applicationContext).inflate(R.layout.floatint_layout, null) as RelativeLayout?
+        val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        mFloatLayout = inflater.inflate(R.layout.floatint_layout, null) as RelativeLayout
         mHandler.post {
-            if (mFloatLayout!!.parent != null) {
+            if (mFloatLayout.parent != null) {
                 LogUtil.d(TAG, "mFloatLayout has parent")
                 mWindowManager!!.removeView(mFloatLayout)
             }
@@ -106,11 +136,11 @@ class FloatingWindowService : Service() {
         }
 
         //浮动窗口按钮
-        mHomeBtn = mFloatLayout!!.findViewById<View>(R.id.ib_home) as ImageButton
-        mFloatLayout!!.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        mHomeBtn = mFloatLayout.findViewById<View>(R.id.ib_home) as ImageButton
+        mFloatLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         //设置监听浮动窗口的触摸移动
-        mHomeBtn!!.setOnTouchListener { v, event ->
+        mHomeBtn.setOnTouchListener { v, event ->
             when (event.action and MotionEvent.ACTION_MASK) {
                 MotionEvent.ACTION_DOWN -> {
                     mCurrentX = event.rawX
@@ -169,7 +199,7 @@ class FloatingWindowService : Service() {
         return height
     }
 
-    fun removeFloatView() {
+    private fun removeFloatView() {
         if (mIsAdded) {
             mHandler.post {
                 mIsAdded = false

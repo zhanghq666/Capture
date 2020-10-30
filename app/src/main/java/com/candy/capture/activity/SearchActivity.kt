@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.view.View.OnFocusChangeListener
 import android.view.ViewGroup
@@ -11,14 +12,19 @@ import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.cardview.widget.CardView
 import com.candy.capture.R
+import com.candy.capture.core.CaptureApplication
 import com.candy.capture.core.ConstantValues
-import com.candy.capture.core.DBHelper
 import com.candy.capture.fragment.ContentListFragment
 import com.candy.capture.fragment.ContentListFragment.OnFragmentInteractionListener
+import com.candy.capture.model.City
+import com.candy.capture.model.SearchHistory
+import com.candy.capture.viewmodel.SearchViewModel
 import com.candy.commonlibrary.utils.CommonTools
 import com.candy.commonlibrary.utils.DensityUtil
 import com.jaeger.library.StatusBarUtil
-import java.util.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.coroutineContext
+import kotlin.math.log
 
 /**
  * @Description
@@ -42,10 +48,10 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
     private var mLocationCv: CardView? = null
     private var mLocationLl: LinearLayout? = null
 
-    private var mDBHelper: DBHelper? = null
+//    private var mDBHelper: DBHelper? = null
 
-    private var mCityList: ArrayList<String>? = null
-    private var mHistoryList: ArrayList<String>? = null
+//    private var mCityList: ArrayList<String>? = null
+//    private var mHistoryList: ArrayList<String>? = null
 
     private lateinit var mContentListFragment: ContentListFragment
 
@@ -54,12 +60,16 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
      */
     private var mIsInEditMode = false
 
+    private val vm: SearchViewModel by lazy {
+        SearchViewModel()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
         findView()
         setView()
-        mDBHelper = DBHelper(mContext)
+//        mDBHelper = DBHelper(mContext)
         getData()
         if (savedInstanceState == null) {
             mContentListFragment = ContentListFragment.newInstance(true)
@@ -129,41 +139,103 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
     private fun getData() {
         getHistory()
         getCities()
+//        coroutineTest()
     }
 
+//    private fun coroutineTest() {
+//        ilog("coroutineTest start")
+//        ilog(1)
+//        GlobalScope.launch(Dispatchers.Main + CoroutineName("MyCoroutine")) {
+//            ilog("coroutine start with $coroutineContext ${Job.currentJob()}")
+//            ilog(2)
+//            launch(CoroutineName("123")) {
+//                ilog("child coroutine start with $coroutineContext ${Job.currentJob()}")
+//                var r1 = task1()
+//                withContext(Dispatchers.IO) {
+//                    ilog("async in child coroutine start ${Job.currentJob()}")
+//                    delay(500)
+//                }
+//                ilog("3 $r1")
+//                async {  }.await()
+//            }
+//
+//            var r2 = task2()
+//            ilog("4 $r2  ${Job.currentJob()}")
+//        }
+//        ilog(5)
+//
+//        ilog("coroutineTest end")
+//    }
+//
+//    private suspend fun task1(): String {
+//        ilog("task1 will suspend 1000")
+//        delay(1000)
+//        ilog("task1 resumed")
+//        return "task1"
+//    }
+//
+//    private suspend fun task2(): String {
+//        ilog("task2 will suspend 2000")
+//        delay(2000)
+//        ilog("task2 resumed")
+//        return "task2"
+//    }
+//
+//    private suspend fun Job.Key.currentJob() = coroutineContext.get(Job)
+//
+//    private fun ilog(msg: Any) {
+//        Log.d("ZHQ", "${Thread.currentThread().name} $msg")
+//    }
+
     private fun getHistory() {
-        mHistoryList = mDBHelper!!.getSearchHistory()
-        if (mHistoryList != null && !mHistoryList!!.isEmpty()) {
-            mSearchHistoryLl!!.visibility = View.VISIBLE
-            val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DensityUtil.dip2px(mContext, 50f))
-            for (history in mHistoryList!!) {
-                val view = View.inflate(this, R.layout.item_history, null)
-                val keywordTv = view.findViewById<View>(R.id.tv_keyword) as TextView
-                keywordTv.text = history
-                view.setOnClickListener { search(history) }
-                mSearchHistoryLl!!.addView(view, params)
+        GlobalScope.launch(Dispatchers.Main) {
+            println(Thread.currentThread().name)
+            val historyList: List<SearchHistory>? = withContext(Dispatchers.IO) {
+                println(Thread.currentThread().name)
+                vm.getSearchHistory()
             }
-        } else {
-            mSearchHistoryLl!!.visibility = View.GONE
+            println(Thread.currentThread().name)
+
+            if (historyList != null && historyList!!.isNotEmpty()) {
+                mSearchHistoryLl!!.visibility = View.VISIBLE
+                val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DensityUtil.dip2px(mContext, 50f))
+                for (history in historyList!!) {
+                    val view = View.inflate(CaptureApplication.getInstance(), R.layout.item_history, null)
+                    val keywordTv = view.findViewById<View>(R.id.tv_keyword) as TextView
+                    keywordTv.text = history.keyword
+                    view.setOnClickListener { search(history.keyword) }
+                    mSearchHistoryLl!!.addView(view, params)
+                }
+            } else {
+                mSearchHistoryLl!!.visibility = View.GONE
+            }
         }
     }
 
     private fun getCities() {
-        mCityList = mDBHelper!!.getAllCity()
-        if (mCityList != null && !mCityList!!.isEmpty()) {
-            mLocationCv!!.visibility = View.VISIBLE
-            mLocationLl!!.visibility = View.VISIBLE
-            val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DensityUtil.dip2px(mContext, 50f))
-            for (city in mCityList!!) {
-                val view = View.inflate(this, R.layout.item_city, null)
-                val cityTv = view.findViewById<View>(R.id.tv_city) as TextView
-                cityTv.text = city
-                view.setOnClickListener { filterCity(city) }
-                mLocationLl!!.addView(view, params)
+        GlobalScope.launch(Dispatchers.Main) {
+            println(Thread.currentThread().name)
+            val cityList: List<City>? = withContext(Dispatchers.IO) {
+                println(Thread.currentThread().name)
+                vm.getAllCity()
             }
-        } else {
-            mLocationCv!!.visibility = View.GONE
-            mLocationLl!!.visibility = View.GONE
+            println(Thread.currentThread().name)
+
+            if (cityList != null && cityList!!.isNotEmpty()) {
+                mLocationCv!!.visibility = View.VISIBLE
+                mLocationLl!!.visibility = View.VISIBLE
+                val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, DensityUtil.dip2px(mContext, 50f))
+                for (city in cityList!!) {
+                    val view = View.inflate(CaptureApplication.getInstance(), R.layout.item_city, null)
+                    val cityTv = view.findViewById<View>(R.id.tv_city) as TextView
+                    cityTv.text = city.cityName
+                    view.setOnClickListener { filterCity(city.cityName) }
+                    mLocationLl!!.addView(view, params)
+                }
+            } else {
+                mLocationCv!!.visibility = View.GONE
+                mLocationLl!!.visibility = View.GONE
+            }
         }
     }
 
@@ -197,8 +269,10 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
         mScrollView!!.visibility = View.GONE
         mSearchHistoryLl!!.visibility = View.GONE
         mCleanIv!!.visibility = View.GONE
-        mDBHelper!!.insertSearchHistory(keyword)
-        mContentListFragment!!.search(keyword, ContentListFragment.SEARCH_TYPE_SEARCH_DESC)
+        GlobalScope.launch {
+            vm.insertSearchHistory(keyword)
+        }
+        mContentListFragment.search(keyword, ContentListFragment.SEARCH_TYPE_SEARCH_DESC)
     }
 
     private fun filterCategory(type: Int) {
@@ -206,7 +280,7 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
         mScrollView!!.visibility = View.GONE
         mSearchHistoryLl!!.visibility = View.GONE
         mCleanIv!!.visibility = View.GONE
-        mContentListFragment!!.search(type.toString(), ContentListFragment.SEARCH_TYPE_SEARCH_CATEGORY)
+        mContentListFragment.search(type.toString(), ContentListFragment.SEARCH_TYPE_SEARCH_CATEGORY)
     }
 
     private fun filterCity(city: String) {
@@ -215,15 +289,13 @@ class SearchActivity: BaseActivity(), View.OnClickListener, OnFragmentInteractio
         mScrollView!!.visibility = View.GONE
         mSearchHistoryLl!!.visibility = View.GONE
         mCleanIv!!.visibility = View.GONE
-        mContentListFragment!!.search(city, ContentListFragment.SEARCH_TYPE_SEARCH_CITY)
+        mContentListFragment.search(city, ContentListFragment.SEARCH_TYPE_SEARCH_CITY)
     }
 
     override fun onBackPressed() {
         if (mIsInEditMode) {
             exitEditMode()
-            if (mContentListFragment != null) {
-                mContentListFragment!!.exitEditMode(true)
-            }
+            mContentListFragment.exitEditMode(true)
         } else {
             super.onBackPressed()
         }

@@ -1,22 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_below="@id/tv_desc">
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
+    <data>
+        <import type="com.candy.capture.util.TimeUtils"/>
+        <variable
+            name="content"
+            type="com.candy.capture.model.Content" />
+        <variable
+            name="clickHandler"
+            type="com.candy.capture.adapter.ContentListAdapter.ItemClickContentCallback" />
 
-    <com.candy.capture.customview.AudioView
-        android:id="@+id/audio_view"
-        android:layout_width="110dp"
-        android:layout_height="44dp"/>
+        <variable
+            name="audioPlayer"
+            type="com.candy.capture.adapter.ContentListAdapter.AudioPlayCallBack" />
+    </data>
 
-    <TextView
-        android:id="@+id/tv_duration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_marginLeft="@dimen/brother_space"
-        android:layout_toRightOf="@id/audio_view"
-        android:textColor="@color/colorTextPrimary"
-        android:textSize="14sp"/>
-</RelativeLayout>
+    <RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.candy.capture.customview.AudioView
+            android:id="@+id/audio_view"
+            android:layout_width="110dp"
+            android:layout_height="44dp"
+            app:duration="@{content.mediaDuration}"
+            app:playingAudio="@{content.playingAudio}"
+            android:onClick="@{() -> clickHandler.onAudioViewClick(content)}"/>
+
+        <TextView
+            android:id="@+id/tv_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/brother_space"
+            android:layout_toRightOf="@id/audio_view"
+            android:textColor="@color/colorTextPrimary"
+            android:text="@{TimeUtils.formatDuration(content.mediaDuration)}"
+            android:textSize="14sp"/>
+    </RelativeLayout>
+</layout>

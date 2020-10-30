@@ -1,26 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/rl_root"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingTop="@dimen/activity_vertical_margin">
+<layout>
 
-    <CheckBox
-        android:id="@+id/cb_select"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:visibility="visible"/>
+    <data>
 
-    <TextView
-        android:id="@+id/tv_desc"
+        <import type="android.view.View" />
+
+        <variable
+            name="content"
+            type="com.candy.capture.model.Content" />
+
+        <variable
+            name="editMode"
+            type="Boolean" />
+
+        <variable
+            name="clickHandler"
+            type="com.candy.capture.adapter.ContentListAdapter.ItemClickContentCallback" />
+    </data>
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/rl_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_toLeftOf="@id/cb_select"
-        android:textColor="@color/colorTextPrimary"
-        android:textSize="16sp"/>
-</RelativeLayout>
+        android:onClick="@{() -> clickHandler.onItemClick(content)}"
+        android:onLongClick="@{() -> clickHandler.onItemLongPressed(content)}"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        android:paddingBottom="@dimen/activity_vertical_margin">
+
+        <CheckBox
+            android:id="@+id/cb_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:visibility="@{editMode ? View.VISIBLE : View.GONE}"
+            android:checked="@={content.select}" />
+
+        <TextView
+            android:id="@+id/tv_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@id/cb_select"
+            android:text="@{content.desc}"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="16sp" />
+    </RelativeLayout>
+</layout>

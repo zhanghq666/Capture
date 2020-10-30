@@ -19,7 +19,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import com.candy.capture.R
 import com.candy.capture.model.MediaPlayState
-import com.candy.capture.util.TimeUtil
+import com.candy.capture.util.TimeUtils
 import com.candy.commonlibrary.utils.DensityUtil
 import com.candy.commonlibrary.utils.LogUtil
 import com.candy.commonlibrary.utils.TipsUtil
@@ -201,7 +201,7 @@ class VideoPlayerActivity: BaseActivity(), View.OnClickListener {
                     mMediaPlayer!!.seekTo(seekBar.progress)
                     delayedHide(AUTO_HIDE_DELAY_MILLIS)
                 }
-                mCurrentProgressTv!!.text = TimeUtil.formatDuration(mMediaPlayer!!.currentPosition / 1000.toLong())
+                mCurrentProgressTv!!.text = TimeUtils.formatDuration(mMediaPlayer!!.currentPosition / 1000.toLong())
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -320,8 +320,8 @@ class VideoPlayerActivity: BaseActivity(), View.OnClickListener {
             mMediaPlayer!!.setOnVideoSizeChangedListener { mp, width, height ->
                 LogUtil.d(TAG, "MediaPlayer onVideoSizeChanged width = $width height = $height")
                 if (isPlayable()) {
-                    mCurrentProgressTv!!.text = TimeUtil.formatDuration(0)
-                    mDurationTv!!.text = TimeUtil.formatDuration(mMediaPlayer!!.duration / 1000.toLong())
+                    mCurrentProgressTv!!.text = TimeUtils.formatDuration(0)
+                    mDurationTv!!.text = TimeUtils.formatDuration(mMediaPlayer!!.duration / 1000.toLong())
                     mProgressSb!!.progress = mMediaPlayer!!.currentPosition
                     mProgressSb!!.max = mMediaPlayer!!.duration
                 }

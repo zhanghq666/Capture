@@ -123,7 +123,7 @@ class AudioRecordActivity : BaseActivity() {
     private fun gotoPublish() {
         val content = Content()
         content.type = ConstantValues.CONTENT_TYPE_AUDIO
-        content.mediaFilePath = mSourceFilePath
+        content.mediaFilePath = mSourceFilePath ?: ""
         content.mediaDuration = mNoiseHandler.seconds
         val intent = Intent(this, PublishActivity::class.java)
         intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_AUDIO)

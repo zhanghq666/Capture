@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.os.Handler
 import android.util.AttributeSet
 import android.view.View
+import com.candy.capture.adapter.ContentListAdapter
 import com.candy.commonlibrary.utils.DensityUtil
 
 /**
@@ -46,6 +47,8 @@ class AudioView(context: Context?, attrs: AttributeSet?): View(context, attrs) {
     private lateinit var mHandler: Handler
     private var strokeWidth = 0
 
+    private var audioPlayer: ContentListAdapter.AudioPlayCallBack? = null
+
     constructor(context: Context?): this(context, null)
 
     init {
@@ -73,6 +76,23 @@ class AudioView(context: Context?, attrs: AttributeSet?): View(context, attrs) {
 
     fun setDuration(duration: Int) {
         mDuration = duration * 10
+    }
+
+    fun setPlayingAudio(playing: Boolean) {
+        if (playing) {
+            var position = audioPlayer?.getPlayPercent()
+            if (position != null && position > 0.0) {
+                startAnimation(position)
+            } else {
+                stopAnimation()
+            }
+        } else{
+            stopAnimation()
+        }
+    }
+
+    fun setAudioPlayer(player: ContentListAdapter.AudioPlayCallBack) {
+        audioPlayer = player
     }
 
     fun startAnimation() {

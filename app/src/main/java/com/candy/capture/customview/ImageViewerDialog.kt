@@ -13,7 +13,7 @@ import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener
 import com.candy.capture.R
-import com.candy.capture.util.GlideImageLoader
+import com.candy.commonlibrary.utils.GlideImageLoader
 import java.util.*
 
 /**
@@ -101,7 +101,7 @@ class ImageViewerDialog(context: Context, val dataSource: List<String>, var curr
             val view = View.inflate(context, R.layout.view_image_item, null)
             val imageView = view.findViewById<View>(R.id.image) as ImageView
             imageView.setOnClickListener { dismiss() }
-            GlideImageLoader.getInstance().loadImage(context, mImages!![position], imageView)
+            GlideImageLoader.getInstance().loadImage(context!!, mImages!![position], imageView)
             mViewList[position] = view
             container.addView(view)
             return view

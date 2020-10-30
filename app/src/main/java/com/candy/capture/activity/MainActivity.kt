@@ -25,6 +25,7 @@ import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.databinding.DataBindingUtil
 import com.candy.capture.IFloatAidlInterface
 import com.candy.capture.R
 import com.candy.capture.core.ConstantValues
@@ -231,6 +232,8 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             addPermission(permissions, Manifest.permission.CAMERA)
             // 录音权限
             addPermission(permissions, Manifest.permission.RECORD_AUDIO)
+
+            addPermission(permissions, Manifest.permission.FOREGROUND_SERVICE)
             if (permissions.size > 0) {
                 requestPermissions(permissions.toTypedArray(), WHOLE_PERMISSION_REQUEST)
             }
@@ -294,7 +297,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (WHOLE_PERMISSION_REQUEST == requestCode) {
-            if (permissions.size > 0) {
+            if (permissions.isNotEmpty()) {
                 for (i in permissions.indices) {
                     if (permissions[i] == Manifest.permission.ACCESS_FINE_LOCATION && grantResults[i] == PackageManager.PERMISSION_GRANTED ||
                             permissions[i] == Manifest.permission.ACCESS_COARSE_LOCATION && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
@@ -305,7 +308,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             }
         } else {
             var isDenied = false
-            if (grantResults.size > 0) {
+            if (grantResults.isNotEmpty()) {
                 for (i in grantResults.indices) {
                     if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
                         isDenied = true
@@ -404,9 +407,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             startActivity(intent)
             handled = true
         } else if (id == R.id.action_delete) {
-            if (mContentListFragment != null) {
-                mContentListFragment!!.checkDeleteContent()
-            }
+            mContentListFragment.checkDeleteContent()
             handled = true
         } else if (id == R.id.action_fast_capture) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -509,6 +510,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
         } else {
             val contentValues = ContentValues(1)
             contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath)
+            contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/*")
             val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
         }
@@ -523,6 +525,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
         } else {
             val contentValues = ContentValues(1)
             contentValues.put(MediaStore.Images.Media.DATA, mCameraFilePath)
+            contentValues.put(MediaStore.Images.Media.MIME_TYPE, "image/*")
             val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             intent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
         }
@@ -534,16 +537,14 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
         super.onActivityResult(requestCode, resultCode, data)
         if (REQ_CODE_ADD_CONTENT == requestCode) {
             if (RESULT_OK == resultCode) {
-                if (mContentListFragment != null) {
-                    mContentListFragment!!.getNewerContents()
-                }
+//                mContentListFragment.getNewerContents()
             }
         } else if (REQ_CODE_TAKE_PICTURE == requestCode) {
             if (RESULT_OK == resultCode) {
                 if (!TextUtils.isEmpty(mCameraFilePath)) {
                     val content = Content()
                     content.type = ConstantValues.CONTENT_TYPE_PHOTO
-                    content.mediaFilePath = mCameraFilePath
+                    content.mediaFilePath = mCameraFilePath ?: ""
                     val intent = Intent(this, PublishActivity::class.java)
                     intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_PHOTO)
                     intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content)
@@ -554,7 +555,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             if (RESULT_OK == resultCode) {
                 val content = Content()
                 content.type = ConstantValues.CONTENT_TYPE_VIDEO
-                content.mediaFilePath = mCameraFilePath
+                content.mediaFilePath = mCameraFilePath ?: ""
                 val intent = Intent(this, PublishActivity::class.java)
                 intent.putExtra(PublishActivity.INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_VIDEO)
                 intent.putExtra(PublishActivity.INTENT_KEY_CONTENT, content)
@@ -568,13 +569,9 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             showOutAnimation()
         } else if (mIsInEditMode) {
             exitEditMode()
-            if (mContentListFragment != null) {
-                mContentListFragment!!.exitEditMode(true)
-            }
+            mContentListFragment.exitEditMode(true)
         } else {
             super.onBackPressed()
-            //            finish();
-//            System.exit(0);
         }
     }
 

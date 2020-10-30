@@ -2,6 +2,15 @@ package com.candy.capture.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.datastore.DataStore
+import androidx.datastore.preferences.Preferences
+import androidx.datastore.preferences.createDataStore
+import androidx.datastore.preferences.edit
+import androidx.datastore.preferences.preferencesKey
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * @Description
@@ -9,10 +18,6 @@ import android.content.SharedPreferences
  * @Date 2020/9/30 11:24
  */
 class SharedPreferenceManager private constructor(val context: Context) {
-
-    init {
-        init()
-    }
 
     companion object {
         private var instance: SharedPreferenceManager? = null
@@ -29,21 +34,24 @@ class SharedPreferenceManager private constructor(val context: Context) {
         }
     }
 
-    private lateinit var mSharedPreferences: SharedPreferences
-
     private var mLocationCity: String? = null
     private var mAllowFastCapture = false
     private var mIsFirstRun = false
 
-    private val KEY_LOCATION_CITY = "key_location_city"
-    private val KEY_FAST_CAPTURE = "key_fast_capture"
-    private val KEY_IS_FIRST_RUN = "key_is_first_run"
+    private val KEY_LOCATION_CITY = preferencesKey<String>("key_location_city")
+    private val KEY_FAST_CAPTURE = preferencesKey<Boolean>("key_fast_capture")
+    private val KEY_IS_FIRST_RUN = preferencesKey<Boolean>("key_is_first_run")
 
-    private fun init() {
-        mSharedPreferences = context.getSharedPreferences("capture", Context.MODE_PRIVATE)
-        mLocationCity = mSharedPreferences.getString(KEY_LOCATION_CITY, ConstantValues.DEFAULT_CITY_NAME)
-        mAllowFastCapture = mSharedPreferences.getBoolean(KEY_FAST_CAPTURE, false)
-        mIsFirstRun = mSharedPreferences.getBoolean(KEY_IS_FIRST_RUN, true)
+    private val dataStore: DataStore<Preferences> = context.createDataStore("capture")
+
+    init {
+        GlobalScope.launch {
+            dataStore.data.collect {
+                mLocationCity = it[KEY_LOCATION_CITY]
+                mAllowFastCapture = it[KEY_FAST_CAPTURE] ?: false
+                mIsFirstRun = it[KEY_IS_FIRST_RUN] ?: false
+            }
+        }
     }
 
     fun getLocationCity(): String? {
@@ -51,10 +59,10 @@ class SharedPreferenceManager private constructor(val context: Context) {
     }
 
     fun setLocationCity(locationCity: String) {
-        synchronized(SharedPreferenceManager::class.java) {
-            if (mLocationCity != locationCity) {
-                mLocationCity = locationCity
-                mSharedPreferences!!.edit().putString(KEY_LOCATION_CITY, mLocationCity).apply()
+        mLocationCity = locationCity
+        GlobalScope.launch {
+            dataStore.edit { settings ->
+                settings[KEY_LOCATION_CITY] = locationCity
             }
         }
     }
@@ -64,9 +72,11 @@ class SharedPreferenceManager private constructor(val context: Context) {
     }
 
     fun setAllowFastCapture(allowFastCapture: Boolean) {
-        synchronized(SharedPreferenceManager::class.java) {
-            mAllowFastCapture = allowFastCapture
-            mSharedPreferences.edit().putBoolean(KEY_FAST_CAPTURE, mAllowFastCapture).commit()
+        mAllowFastCapture = allowFastCapture
+        GlobalScope.launch {
+            dataStore.edit { settings ->
+                settings[KEY_FAST_CAPTURE] = allowFastCapture
+            }
         }
     }
 
@@ -75,9 +85,11 @@ class SharedPreferenceManager private constructor(val context: Context) {
     }
 
     fun setFirstRun(firstRun: Boolean) {
-        synchronized(SharedPreferenceManager::class.java) {
-            mIsFirstRun = firstRun
-            mSharedPreferences.edit().putBoolean(KEY_IS_FIRST_RUN, mIsFirstRun).commit()
+        mIsFirstRun = firstRun
+        GlobalScope.launch {
+            dataStore.edit { settings ->
+                settings[KEY_IS_FIRST_RUN] = firstRun
+            }
         }
     }
 }

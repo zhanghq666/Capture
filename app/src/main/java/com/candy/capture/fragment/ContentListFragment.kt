@@ -1,32 +1,22 @@
 package com.candy.capture.fragment
 
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
-import android.media.MediaPlayer
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.candy.capture.R
 import com.candy.capture.activity.AliPlayerActivity
 import com.candy.capture.adapter.ContentListAdapter
-import com.candy.capture.adapter.ContentListAdapter.AudioPlayCallBack
-import com.candy.capture.adapter.ContentListAdapter.ItemClickCallback
-import com.candy.capture.core.DBHelper
 import com.candy.capture.customview.ContentListDivider
 import com.candy.capture.customview.ImageViewerDialog
+import com.candy.capture.databinding.FragmentContentListBinding
 import com.candy.capture.model.Content
-import com.candy.capture.model.MediaPlayState
-import com.candy.commonlibrary.utils.LogUtil
-import com.candy.commonlibrary.utils.TipsUtil
-import java.io.File
-import java.io.IOException
+import com.candy.capture.viewmodel.ContentListViewModel
+import kotlinx.android.synthetic.main.fragment_content_list.*
 import java.util.*
 
 /**
@@ -34,7 +24,7 @@ import java.util.*
  * @Author zhanghaiqiang
  * @Date 2020/9/30 11:57
  */
-class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
+class ContentListFragment : Fragment() {
 
 
     private var mIsSearch = false
@@ -43,47 +33,20 @@ class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
 
     private var mListener: OnFragmentInteractionListener? = null
 
-    private var mDBHelper: DBHelper? = null
-
-    private var mContentsRv: RecyclerView? = null
-
-    /**
-     * 内容集合
-     */
-    private var mContentList: ArrayList<Content>? = null
-
-    /**
-     * 编辑状态下选中内容项集合
-     */
-    private var mSelectedContents: ArrayList<Content>? = null
-
     /**
      * RecyclerView Adapter
      */
     private var mContentListAdapter: ContentListAdapter? = null
-
-    /**
-     * 音频MediaPlayer实例
-     */
-    private var mMediaPlayer: MediaPlayer? = null
-
-    /**
-     * 音频MediaPlayer状态
-     */
-    private var mPlayState: MediaPlayState? = null
-
-    /**
-     * 正在播放音频的列表项索引
-     */
-    private var mCurrentPlayingItemIndex = -1
-    private var mIsLoadingData = false
     private var mHasMore = false
 
     /**
      * 标识是否处于编辑模式
      */
     private var mIsInEditMode = false
-    private var mProgressDialog: ProgressDialog? = null
+
+    private val vm: ContentListViewModel by lazy {
+        ContentListViewModel()
+    }
 
     companion object {
         private const val TAG = "ContentListFragment"
@@ -125,40 +88,105 @@ class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_content_list, container, false)
+        var binding = FragmentContentListBinding.inflate(layoutInflater, container, false)
+        return binding.root
+//        return inflater.inflate(R.layout.fragment_content_list, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mDBHelper = DBHelper(context)
-        mContentList = ArrayList()
-        findView(view)
+//        mDBHelper = DBHelper(context)
+//        mContentList = ArrayList()
         setView()
-        if (!mIsSearch) {
-            getContents()
-        }
-    }
-
-    private fun findView(rootView: View) {
-        mContentsRv = rootView.findViewById<View>(R.id.rv_contents) as RecyclerView
     }
 
     private fun setView() {
-        mContentListAdapter = ContentListAdapter(context, mContentList, this, this)
-        mContentsRv!!.adapter = mContentListAdapter
-        mContentsRv!!.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
-        mContentsRv!!.addItemDecoration(ContentListDivider(context!!))
-        mContentsRv!!.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                val layoutManager = recyclerView.layoutManager as LinearLayoutManager?
-                val totalItemCount = layoutManager!!.itemCount
-                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
-                if (mHasMore && !mIsLoadingData && totalItemCount < lastVisibleItem + LIST_BUFFER_THRESHOLD) {
-                    getContents()
+        mContentListAdapter = ContentListAdapter(context, vm)
+        mContentListAdapter!!.callbackContent = object : ContentListAdapter.ItemClickContentCallback {
+            override fun onItemClick(content: Content) {
+                if (mIsInEditMode) {
+                    content.select = !content.select
+                    /*mContentList!![position].isSelect = !mContentList!![position].isSelect
+                    if (mSelectedContents == null) mSelectedContents = ArrayList()
+                    if (mContentList!![position].isSelect) {
+                        mSelectedContents!!.add(mContentList!![position])
+                    } else {
+                        mSelectedContents!!.remove(mContentList!![position])
+                    }*/
+                    if (vm.contentList.value!!.count { c -> c.select } <= 0) {
+                        exitEditMode(false)
+                    } else {
+                        mContentListAdapter!!.notifyItemChanged(vm.contentList.value!!.indexOf(content))
+                    }
                 }
             }
-        })
+
+            override fun onItemLongPressed(content: Content): Boolean {
+//                val position = vm.contentList.value?.indexOf(content)
+                if (mIsSearch) return true
+                if (!mIsInEditMode) {
+                    content.select = true
+//                    if (mSelectedContents == null) mSelectedContents = ArrayList()
+//                    mSelectedContents!!.add(mContentList!![position])
+                    gotoEditMode()
+                }
+                return true
+            }
+
+            override fun onAudioViewClick(content: Content) {
+//                val position = mContentList?.indexOf(content)!!
+                if (mIsInEditMode) {
+                    onItemClick(content)
+                    return
+                }
+                vm.onAudioViewClick(content)
+            }
+
+            override fun onImageViewClick(content: Content) {
+                if (mIsInEditMode) {
+                    onItemClick(content)
+                    return
+                }
+                val list = ArrayList<String>()
+                list.add(content.mediaFilePath)
+                ImageViewerDialog.showDialog(context!!, list, 1)
+            }
+
+            override fun onVideoViewClick(content: Content) {
+                if (mIsInEditMode) {
+                    onItemClick(content)
+                    return
+                }
+
+                vm.stopMedia()
+
+                val intent = Intent(context, AliPlayerActivity::class.java)
+                intent.putExtra(AliPlayerActivity.EXTRA_MEDIA_PATH_KEY, content.mediaFilePath)
+                startActivity(intent)
+            }
+
+        }
+        contentRV.adapter = mContentListAdapter
+        contentRV.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+        contentRV.addItemDecoration(ContentListDivider(context!!))
+        contentRV.setHasFixedSize(true)
+//        contentRV.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+//            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+//                super.onScrolled(recyclerView, dx, dy)
+//                val layoutManager = recyclerView.layoutManager as LinearLayoutManager?
+//                val totalItemCount = layoutManager!!.itemCount
+//                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+//                if (mHasMore && !mIsLoadingData && totalItemCount < lastVisibleItem + LIST_BUFFER_THRESHOLD) {
+//                    getContents()
+//                }
+//            }
+//        })
+
+
+        if (!mIsSearch) {
+            vm.getAllContent()
+            vm.contentList.observe(this, { mContentListAdapter!!.submitList(it) })
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -177,149 +205,58 @@ class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
     }
 
     //region 获取内容
-    fun getNewerContents() {
-        mIsLoadingData = true
-        var contents: ArrayList<Content>? = null
-        contents = if (mContentList!!.isEmpty()) {
-            mDBHelper!!.getContentNewer(-1, COUNT)
-        } else {
-            mDBHelper!!.getContentNewer(mContentList!![0].id, COUNT)
-        }
-        mContentList!!.addAll(0, contents!!)
-        val count = contents.size
-        mContentListAdapter!!.notifyItemRangeInserted(0, count)
-        mIsLoadingData = false
-    }
+//    fun getNewerContents() {
+//        mIsLoadingData = true
+//        var contents: ArrayList<Content>? = null
+//        contents = if (mContentList!!.isEmpty()) {
+//            mDBHelper!!.getContentNewer(-1, COUNT)
+//        } else {
+//            mDBHelper!!.getContentNewer(mContentList!![0].id!!, COUNT)
+//        }
+//        mContentList!!.addAll(0, contents!!)
+//        val count = contents.size
+//        mContentListAdapter!!.notifyItemRangeInserted(0, count)
+//        mIsLoadingData = false
+//    }
 
     fun search(keyWord: String?, searchType: Int) {
         mKerWord = keyWord
         mSearchType = searchType
-        if (!mContentList!!.isEmpty()) {
-            mContentList!!.clear()
-            mContentListAdapter!!.notifyDataSetChanged()
-        }
+
+//        if (!mContentList!!.isEmpty()) {
+//            mContentList!!.clear()
+//            mContentListAdapter!!.notifyDataSetChanged()
+//        }
         getContents()
     }
 
     private fun getContents() {
-        mIsLoadingData = true
-        if (mContentList!!.isEmpty()) {
-            if (mProgressDialog == null) {
-                mProgressDialog = ProgressDialog.show(context, null, null, true, true)
-            } else {
-                mProgressDialog!!.show()
-            }
-        }
-        var contents: ArrayList<Content>? = null
         when (mSearchType) {
-            SEARCH_TYPE_NO_SEARCH -> {
-                val startId = if (mContentList!!.isEmpty()) -1 else mContentList!![mContentList!!.size - 1].id
-                contents = mDBHelper!!.getContentOlder(startId, COUNT)
-            }
+//            SEARCH_TYPE_NO_SEARCH -> vm.getAllContent()
             SEARCH_TYPE_SEARCH_CATEGORY -> try {
                 val type = mKerWord!!.toInt()
-                contents = mDBHelper!!.searchByType(type, COUNT)
+                vm.searchByType(type)
+                vm.contentList.observe(this, { mContentListAdapter!!.submitList(it) })
             } catch (e: NumberFormatException) {
                 e.printStackTrace()
             }
-            SEARCH_TYPE_SEARCH_CITY -> contents = mDBHelper!!.searchByCity(mKerWord!!, COUNT)
-            SEARCH_TYPE_SEARCH_DESC -> contents = mDBHelper!!.searchByDesc(mKerWord!!, COUNT)
+            SEARCH_TYPE_SEARCH_CITY -> {
+                vm.searchByCity(mKerWord!!)
+                vm.contentList.observe(this, { mContentListAdapter!!.submitList(it) })
+            }
+            SEARCH_TYPE_SEARCH_DESC -> {
+                vm.searchByDesc(mKerWord!!)
+                vm.contentList.observe(this, { mContentListAdapter!!.submitList(it) })
+            }
         }
-        if (contents != null && contents.size > 0) {
-            val startPosition = if (mContentList!!.isEmpty()) 0 else mContentList!!.size - 1
-            val count = contents.size
-            mContentList!!.addAll(contents)
-            mContentListAdapter!!.notifyItemRangeInserted(startPosition, count)
-        }
-        mHasMore = contents != null && contents.size == COUNT
-        if (mProgressDialog != null && mProgressDialog!!.isShowing) {
-            mProgressDialog!!.dismiss()
-        }
-        mIsLoadingData = false
     }
     //endregion
 
-    //region 列表项事件回调
-    override fun onItemClick(position: Int) {
-        if (mIsInEditMode) {
-            mContentList!![position].isSelect = !mContentList!![position].isSelect
-            if (mSelectedContents == null) mSelectedContents = ArrayList()
-            if (mContentList!![position].isSelect) {
-                mSelectedContents!!.add(mContentList!![position])
-            } else {
-                mSelectedContents!!.remove(mContentList!![position])
-            }
-            if (mSelectedContents!!.isEmpty()) {
-                exitEditMode(false)
-            } else {
-                mContentListAdapter!!.notifyItemChanged(position)
-            }
-        }
-    }
 
-    override fun onItemLongPressed(position: Int) {
-        if (mIsSearch) return
-        if (!mIsInEditMode) {
-            mContentList!![position].isSelect = true
-            if (mSelectedContents == null) mSelectedContents = ArrayList()
-            mSelectedContents!!.add(mContentList!![position])
-            gotoEditMode()
-        }
-    }
-
-    override fun onAudioViewClick(position: Int) {
-        if (mIsInEditMode) {
-            onItemClick(position)
-            return
-        }
-        if (mCurrentPlayingItemIndex == position) {
-            if (MediaPlayState.STARTED == mPlayState) {
-                stopMedia()
-            } else if (MediaPlayState.COMPLETED == mPlayState || MediaPlayState.PREPARED == mPlayState) {
-                playMedia()
-            } else if (MediaPlayState.STOPPED == mPlayState) {
-                prepareMediaPlayer()
-                playMedia()
-            }
-        } else {
-            if (mCurrentPlayingItemIndex >= 0) {
-                if (MediaPlayState.STARTED == mPlayState) {
-                    stopMedia()
-                }
-                mMediaPlayer!!.reset()
-                mPlayState = MediaPlayState.IDLE
-            }
-            mCurrentPlayingItemIndex = position
-            setMediaPlayerSource()
-            prepareMediaPlayer()
-            playMedia()
-        }
-    }
-
-    override fun onImageViewClick(position: Int) {
-        if (mIsInEditMode) {
-            onItemClick(position)
-            return
-        }
-        val list = ArrayList<String>()
-        list.add(mContentList!![position].mediaFilePath!!)
-        ImageViewerDialog.showDialog(context!!, list, 1)
-    }
-
-    override fun onVideoViewClick(position: Int) {
-        if (mIsInEditMode) {
-            onItemClick(position)
-            return
-        }
-        if (MediaPlayState.STARTED == mPlayState) {
-            stopMedia()
-        }
-        val intent = Intent(context, AliPlayerActivity::class.java)
-        intent.putExtra(AliPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList!![position].mediaFilePath)
-        startActivity(intent)
-//        Intent intent = new Intent(getContext(), VideoPlayerActivity.class);
-//        intent.putExtra(VideoPlayerActivity.EXTRA_MEDIA_PATH_KEY, mContentList.get(position).getMediaFilePath());
-//        startActivity(intent);
+    //region 语音播放相关
+    override fun onResume() {
+        super.onResume()
+        vm.initMediaPlayer()
     }
 
     private fun gotoEditMode() {
@@ -328,8 +265,7 @@ class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
             mListener!!.gotoEditMode()
         }
         // 停止播放音频、释放资源
-        releaseMedia()
-        mCurrentPlayingItemIndex = -1
+        vm.releaseMedia()
         // 列表显示变化
         mContentListAdapter!!.setEditMode(true)
         mContentListAdapter!!.notifyDataSetChanged()
@@ -343,144 +279,40 @@ class ContentListFragment: Fragment(), ItemClickCallback, AudioPlayCallBack {
             }
         }
         // 重新组织MediaPlayer
-        initMediaPlayer()
+        vm.initMediaPlayer()
         // 清空已选项集合
-        if (mSelectedContents != null && !mSelectedContents!!.isEmpty()) {
-            for (content in mSelectedContents!!) {
-                content.isSelect = false
-            }
-            mSelectedContents!!.clear()
-        }
+        vm.exitEditMode()
         // 列表显示变化
         mContentListAdapter!!.setEditMode(false)
         mContentListAdapter!!.notifyDataSetChanged()
     }
-    //endregion
-
-    //region 语音播放相关
-    override fun onResume() {
-        super.onResume()
-        initMediaPlayer()
-    }
-
-    /**
-     * 供Adapter调用获取当前音频播放进度
-     *
-     * @return
-     */
-    override fun getPlayPercent(): Double {
-        var percent = 0.0
-        if (MediaPlayState.STARTED == mPlayState) {
-            percent = mMediaPlayer!!.currentPosition.toDouble() / mMediaPlayer!!.duration
-        }
-        LogUtil.d(TAG, "getPlayPercent percent = $percent")
-        return percent
-    }
-
-    private fun initMediaPlayer() {
-        if (mMediaPlayer == null) {
-            mMediaPlayer = MediaPlayer()
-            mPlayState = MediaPlayState.IDLE
-            mMediaPlayer!!.setOnCompletionListener {
-                mPlayState = MediaPlayState.COMPLETED
-                mContentList!![mCurrentPlayingItemIndex].isPlayingAudio = false
-                mContentListAdapter!!.notifyItemChanged(mCurrentPlayingItemIndex)
-            }
-            mMediaPlayer!!.setOnErrorListener { mp, what, extra ->
-                LogUtil.e(TAG, "MediaPlayer onError")
-                mPlayState = MediaPlayState.ERROR
-                mp.reset()
-                mPlayState = MediaPlayState.IDLE
-                initMediaPlayer()
-                true
-            }
-        }
-        if (mCurrentPlayingItemIndex >= 0) {
-            setMediaPlayerSource()
-            prepareMediaPlayer()
-        }
-    }
-
-    private fun setMediaPlayerSource() {
-        try {
-            mMediaPlayer!!.setDataSource(mContentList!![mCurrentPlayingItemIndex].mediaFilePath)
-            mPlayState = MediaPlayState.INITIALIZED
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun prepareMediaPlayer() {
-        try {
-            mMediaPlayer!!.prepare()
-            mPlayState = MediaPlayState.PREPARED
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun playMedia() {
-        mMediaPlayer!!.start()
-        mPlayState = MediaPlayState.STARTED
-        mContentList!![mCurrentPlayingItemIndex].isPlayingAudio = true
-        mContentListAdapter!!.notifyItemChanged(mCurrentPlayingItemIndex)
-    }
-
-    private fun stopMedia() {
-        mMediaPlayer!!.stop()
-        mPlayState = MediaPlayState.STOPPED
-        mContentList!![mCurrentPlayingItemIndex].isPlayingAudio = false
-        mContentListAdapter!!.notifyItemChanged(mCurrentPlayingItemIndex)
-    }
-
-    private fun releaseMedia() {
-        if (mMediaPlayer != null) {
-            if (MediaPlayState.STARTED == mPlayState) {
-                stopMedia()
-            }
-            mMediaPlayer!!.release()
-            mPlayState = MediaPlayState.END
-            mMediaPlayer = null
-        }
-    }
 
     override fun onPause() {
         super.onPause()
-        releaseMedia()
+        vm.releaseMedia()
     }
 
     //endregion
 
     fun checkDeleteContent() {
-        if (mSelectedContents != null && !mSelectedContents!!.isEmpty()) {
-            val dialog = AlertDialog.Builder(context!!)
-                    .setMessage("要删除此内容吗？")
-                    .setNegativeButton("取消", null)
-                    .setPositiveButton("删除") { dialog, which -> deleteContent() }
-                    .create()
-            dialog.show()
+        if (vm.contentList.value != null) {
+            val selectedValue = vm.contentList.value!!.filter { ct ->
+                ct!!.select
+            }
+
+            if (selectedValue.isNotEmpty()) {
+                val dialog = AlertDialog.Builder(context!!)
+                        .setMessage("要删除此内容吗？")
+                        .setNegativeButton("取消", null)
+                        .setPositiveButton("删除") { _, _ -> deleteContent() }
+                        .create()
+                dialog.show()
+            }
         }
     }
 
     private fun deleteContent() {
-        if (mSelectedContents != null && !mSelectedContents!!.isEmpty()) {
-            try {
-                if (!mDBHelper!!.deleteContent(mSelectedContents)) {
-                    TipsUtil.showToast(context, "删除所选内容失败")
-                    return
-                }
-                mContentList!!.removeAll(mSelectedContents!!)
-                for (content in mSelectedContents!!) {
-                    if (!TextUtils.isEmpty(content.mediaFilePath)) {
-                        File(content.mediaFilePath).delete()
-                    }
-                }
-                exitEditMode(false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                TipsUtil.showToast(context, "删除所选内容失败")
-            }
-        }
+        vm.deleteContent()
     }
 
     interface OnFragmentInteractionListener {

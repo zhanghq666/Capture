@@ -16,7 +16,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import com.candy.capture.R
-import com.candy.capture.util.TimeUtil
+import com.candy.capture.util.TimeUtils
 import com.candy.commonlibrary.utils.DensityUtil
 import com.candy.commonlibrary.utils.LogUtil
 import com.candy.commonlibrary.utils.TipsUtil
@@ -171,7 +171,7 @@ class AliPlayerActivity: BaseActivity(), View.OnClickListener {
                     mAliVideoView!!.seekTo(seekBar.progress.toLong())
                     delayedHide(AUTO_HIDE_DELAY_MILLIS)
                 }
-                mCurrentProgressTv!!.text = TimeUtil.formatDuration(mAliVideoView!!.getCurrentPosition() / 1000)
+                mCurrentProgressTv!!.text = TimeUtils.formatDuration(mAliVideoView!!.getCurrentPosition() / 1000)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
@@ -270,8 +270,8 @@ class AliPlayerActivity: BaseActivity(), View.OnClickListener {
         })
         mAliVideoView!!.setOnVideoSizeChangedListener(object: AliVideoView.OnVideoSizeChangedListener {
             override fun onVideoSizeChanged(width: Int, height: Int) {
-                mCurrentProgressTv!!.text = TimeUtil.formatDuration(0)
-                mDurationTv!!.text = TimeUtil.formatDuration(mAliVideoView!!.getDuration() / 1000)
+                mCurrentProgressTv!!.text = TimeUtils.formatDuration(0)
+                mDurationTv!!.text = TimeUtils.formatDuration(mAliVideoView!!.getDuration() / 1000)
                 mProgressSb!!.progress = mAliVideoView!!.getCurrentPosition().toInt()
                 mProgressSb!!.max = mAliVideoView!!.getDuration().toInt()
             }
@@ -286,7 +286,8 @@ class AliPlayerActivity: BaseActivity(), View.OnClickListener {
     }
 
     private fun setMediaPlayerSource() {
-        mMediaFilePath = "http://oss.littlehotspot.com/media/resource/h8YcE7debZ.mp4"
+//        mMediaFilePath = "http://oss.littlehotspot.com/media/resource/h8YcE7debZ.mp4"
+        mMediaFilePath = "http://player.alicdn.com/video/aliyunmedia.mp4"
         mAliVideoView!!.setMediaSource(mMediaFilePath)
         mHandler.post(mUpdateProgressRunnable)
     }

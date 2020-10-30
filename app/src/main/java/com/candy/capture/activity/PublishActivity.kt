@@ -12,19 +12,22 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
+import com.candy.capture.BR
 import com.candy.capture.R
 import com.candy.capture.core.BackStackManager
 import com.candy.capture.core.ConstantValues
-import com.candy.capture.core.DBHelper
 import com.candy.capture.core.SharedPreferenceManager
 import com.candy.capture.customview.AudioView
 import com.candy.capture.customview.ImageViewerDialog
+import com.candy.capture.databinding.ActivityPublishBinding
 import com.candy.capture.model.Content
 import com.candy.capture.model.MediaPlayState
-import com.candy.capture.util.GlideImageLoader
-import com.candy.capture.util.TimeUtil
+import com.candy.commonlibrary.utils.GlideImageLoader
+import com.candy.capture.util.TimeUtils
+import com.candy.capture.viewmodel.PublishViewModel
 import com.candy.commonlibrary.utils.LogUtil
 import com.candy.commonlibrary.utils.TipsUtil
+import org.jetbrains.annotations.NotNull
 import java.io.IOException
 import java.util.*
 
@@ -45,7 +48,6 @@ class PublishActivity: BaseActivity(), View.OnClickListener {
 
     private var mAudioStub: ViewStub? = null
     private var mAudioView: AudioView? = null
-    private var mAudioDurationTv: TextView? = null
 
     private var mPhotoStub: ViewStub? = null
     private var mImageView: ImageView? = null
@@ -56,13 +58,19 @@ class PublishActivity: BaseActivity(), View.OnClickListener {
 
     private var mType = 0
     private var mContent: Content? = null
+    private val vm: PublishViewModel by lazy {
+        PublishViewModel()
+    }
 
     private var mMediaPlayer: MediaPlayer? = null
     private var mPlayState: MediaPlayState? = null
 
+    private lateinit var binding: ActivityPublishBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_publish)
+        binding = ActivityPublishBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         val toolbar = findViewById<View>(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
         toolbar.setNavigationOnClickListener { finish() }
@@ -75,6 +83,12 @@ class PublishActivity: BaseActivity(), View.OnClickListener {
     private fun handleIntent() {
         mType = intent.getIntExtra(INTENT_KEY_TYPE, ConstantValues.CONTENT_TYPE_TEXT)
         mContent = intent.getSerializableExtra(INTENT_KEY_CONTENT) as Content?
+        if (mContent == null) {
+            mContent = Content()
+            mContent!!.type = mType
+        }
+
+        binding.setVariable(BR.content, mContent)
     }
 
     private fun findView() {
@@ -89,25 +103,23 @@ class PublishActivity: BaseActivity(), View.OnClickListener {
             ConstantValues.CONTENT_TYPE_AUDIO -> {
                 mAudioStub!!.inflate()
                 mAudioView = findViewById<View>(R.id.audio_view) as AudioView
-                mAudioDurationTv = findViewById<View>(R.id.tv_duration) as TextView
+//                mAudioDurationTv = findViewById<View>(R.id.tv_duration) as TextView
                 mAudioView!!.setDuration(mContent!!.mediaDuration)
                 mAudioView!!.setOnClickListener(this)
-                mAudioDurationTv!!.text = TimeUtil.formatDuration(mContent!!.mediaDuration.toLong())
+//                mAudioDurationTv!!.text = TimeUtils.formatDuration(mContent!!.mediaDuration!!.toLong())
             }
             ConstantValues.CONTENT_TYPE_PHOTO -> {
                 mPhotoStub!!.inflate()
                 mImageView = findViewById<View>(R.id.image_view) as ImageView
                 mImageView!!.setOnClickListener(this)
-                GlideImageLoader.getInstance().loadImage(mContext, mContent!!.mediaFilePath, mImageView)
+                GlideImageLoader.getInstance().loadImage(mContext, mContent!!.mediaFilePath, mImageView!!)
             }
             ConstantValues.CONTENT_TYPE_VIDEO -> {
                 mVideoStub!!.inflate()
                 mVideoCoverView = findViewById<View>(R.id.image_view) as ImageView
                 mVideoPlaybackMask = findViewById<View>(R.id.iv_playback_mask) as ImageView
                 mVideoPlaybackMask!!.setOnClickListener(this)
-                //                Bitmap bitmap = ThumbnailUtils.createVideoThumbnail(mContent.getMediaFilePath(), MediaStore.Video.Thumbnails.MICRO_KIND);
-//                mVideoCoverView.setImageBitmap(bitmap);
-                GlideImageLoader.getInstance().loadVideoThumbnail(this, mContent!!.mediaFilePath, mVideoCoverView)
+                GlideImageLoader.getInstance().loadVideoThumbnail(this, mContent!!.mediaFilePath, mVideoCoverView!!)
             }
         }
     }
@@ -192,15 +204,12 @@ class PublishActivity: BaseActivity(), View.OnClickListener {
     }
 
     private fun insertToDB(): Boolean {
-        val dbHelper = DBHelper(mContext)
-        if (mContent == null) {
-            mContent = Content()
-            mContent!!.type = mType
+        mContent?.let {
+            it.cityName = SharedPreferenceManager.getInstance(mContext).getLocationCity() ?: ""
+            it.releaseTime = Date().time / 1000
+            vm.saveContent(it)
         }
-        mContent!!.desc = mDescEt!!.text.toString().trim { it <= ' ' }
-        mContent!!.cityName = SharedPreferenceManager.getInstance(mContext).getLocationCity()
-        mContent!!.releaseTime = Date().time / 1000
-        return dbHelper.insertContent(mContent)
+        return true
     }
 
     override fun onClick(v: View) {

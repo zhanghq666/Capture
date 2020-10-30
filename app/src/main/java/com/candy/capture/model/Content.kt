@@ -1,5 +1,6 @@
 package com.candy.capture.model
 
+import androidx.room.*
 import java.io.Serializable
 
 /**
@@ -7,10 +8,12 @@ import java.io.Serializable
  * @Author zhanghaiqiang
  * @Date 2020/9/30 15:28
  */
-data class Content(var id: Int = 0, var type: Int = 0, var desc: String? = null, var mediaFilePath: String? = null,
-                   var mediaDuration: Int = 0, var cityName: String? = null, var releaseTime: Long = 0,
-                   var isSynced: Boolean = false, var isSelect: Boolean = false, var isPlayingAudio: Boolean = false) : Serializable {
-
+@Entity(tableName = "content", foreignKeys = [ForeignKey(entity = City::class, childColumns = ["city_name"], parentColumns = ["city_name"])])
+data class Content(@PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") var id: Int = 0, @ColumnInfo(name = "type") var type: Int = 0,
+                   @ColumnInfo(name = "description") var desc: String = "", @ColumnInfo(name = "file_path") var mediaFilePath: String = "",
+                   @ColumnInfo(name = "media_duration") var mediaDuration: Int = 0, @ColumnInfo(name = "city_name", index = true) var cityName: String = "",
+                   @ColumnInfo(name = "release_time") var releaseTime: Long = 0, @Ignore var synced: Boolean = false,
+                   @Ignore var select: Boolean = false, @Ignore var playingAudio: Boolean = false) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -24,9 +27,9 @@ data class Content(var id: Int = 0, var type: Int = 0, var desc: String? = null,
         if (mediaDuration != other.mediaDuration) return false
         if (cityName != other.cityName) return false
         if (releaseTime != other.releaseTime) return false
-        if (isSynced != other.isSynced) return false
-        if (isSelect != other.isSelect) return false
-        if (isPlayingAudio != other.isPlayingAudio) return false
+        if (synced != other.synced) return false
+        if (select != other.select) return false
+        if (playingAudio != other.playingAudio) return false
 
         return true
     }
@@ -34,15 +37,14 @@ data class Content(var id: Int = 0, var type: Int = 0, var desc: String? = null,
     override fun hashCode(): Int {
         var result = id
         result = 31 * result + type
-        result = 31 * result + (desc?.hashCode() ?: 0)
-        result = 31 * result + (mediaFilePath?.hashCode() ?: 0)
-        result = 31 * result + mediaDuration.hashCode()
-        result = 31 * result + (cityName?.hashCode() ?: 0)
+        result = 31 * result + desc.hashCode()
+        result = 31 * result + mediaFilePath.hashCode()
+        result = 31 * result + mediaDuration
+        result = 31 * result + cityName.hashCode()
         result = 31 * result + releaseTime.hashCode()
-        result = 31 * result + isSynced.hashCode()
-        result = 31 * result + isSelect.hashCode()
-        result = 31 * result + isPlayingAudio.hashCode()
+        result = 31 * result + synced.hashCode()
+        result = 31 * result + select.hashCode()
+        result = 31 * result + playingAudio.hashCode()
         return result
     }
-
 }

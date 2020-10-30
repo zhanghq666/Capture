@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_below="@id/tv_desc">
+<layout xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <ImageView
-        android:id="@+id/image_view"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:scaleType="centerCrop"/>
-</RelativeLayout>
+    <data>
+
+        <variable
+            name="content"
+            type="com.candy.capture.model.Content" />
+
+        <variable
+            name="clickHandler"
+            type="com.candy.capture.adapter.ContentListAdapter.ItemClickContentCallback" />
+    </data>
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/image_view"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:scaleType="centerCrop"
+            app:imageUrl="@{content.mediaFilePath}"
+            android:onClick="@{() -> clickHandler.onImageViewClick(content)}"/>
+    </RelativeLayout>
+</layout>
