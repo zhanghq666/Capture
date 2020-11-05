@@ -144,7 +144,9 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
         // 权限未拿到时从Main去请求权限、启动定位Service，拿到以后从Splash启动
         // 低版本直接定位，高版本请求权限通过后定位
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED) {
                 startLocationService()
             }
         } else {
@@ -211,19 +213,11 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val permissions = ArrayList<String>()
             // 定位精确位置
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            }
-            if (checkSelfPermission(Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
-                permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            }
+            addPermission(permissions, Manifest.permission.ACCESS_FINE_LOCATION)
+            addPermission(permissions, Manifest.permission.ACCESS_COARSE_LOCATION)
+            addPermission(permissions, Manifest.permission.ACCESS_COARSE_LOCATION)
 
-            /*
-             * 读写权限和电话状态权限非必要权限(建议授予)只会申请一次，用户同意或者禁止，只会弹一次
-			 */
+            addPermission(permissions, Manifest.permission.INTERNET)
             // 读写权限
             addPermission(permissions, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             // 读取电话状态权限
@@ -413,7 +407,7 @@ class MainActivity: BaseActivity(), OnFragmentInteractionListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (!Settings.canDrawOverlays(mContext)) {
                     if (mFloatingAlertDialog == null) {
-                        mFloatingAlertDialog = AlertDialog.Builder(mContext!!)
+                        mFloatingAlertDialog = AlertDialog.Builder(mContext)
                                 .setTitle("无悬浮窗权限")
                                 .setMessage("请前往设置-应用管理中为Capture开启显示悬浮窗权限")
                                 .setPositiveButton("去设置") { dialog, which ->

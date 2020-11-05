@@ -33,7 +33,7 @@ android {
 
     // 签名配置
     signingConfigs {
-        debug {
+        dev {
             storeFile file("../zhanghq.jks")
             storePassword "zhanghq123456"
             keyAlias "zhanghq"
@@ -57,7 +57,7 @@ android {
             minifyEnabled false
             zipAlignEnabled false
             shrinkResources false
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.dev
         }
 
         release {

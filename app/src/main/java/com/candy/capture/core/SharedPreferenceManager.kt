@@ -34,7 +34,7 @@ class SharedPreferenceManager private constructor(val context: Context) {
         }
     }
 
-    private var mLocationCity: String? = null
+    private var mLocationCity: String = ""
     private var mAllowFastCapture = false
     private var mIsFirstRun = false
 
@@ -47,7 +47,7 @@ class SharedPreferenceManager private constructor(val context: Context) {
     init {
         GlobalScope.launch {
             dataStore.data.collect {
-                mLocationCity = it[KEY_LOCATION_CITY]
+                mLocationCity = it[KEY_LOCATION_CITY] ?: ConstantValues.DEFAULT_CITY_NAME
                 mAllowFastCapture = it[KEY_FAST_CAPTURE] ?: false
                 mIsFirstRun = it[KEY_IS_FIRST_RUN] ?: false
             }
