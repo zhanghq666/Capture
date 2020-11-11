@@ -9,6 +9,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        flavorDimensions "platform"
 
         consumerProguardFiles "consumer-rules.pro"
     }
@@ -17,6 +18,15 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    productFlavors {
+        doctor {
+            dimension "platform"
+        }
+        patient {
+            dimension "platform"
         }
     }
 }

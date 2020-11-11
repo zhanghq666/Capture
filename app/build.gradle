@@ -2,6 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+
+def ENV_DEVELOP = 1
+def ENV_TEST = 2
+def ENV_PRODUCT = 3
+
 //定义打包时间函数
 static def releaseTime() {
     return new Date().format("yyyyMMddHHmm", TimeZone.getDefault())
@@ -18,6 +23,8 @@ android {
         versionName "1.0"
 
         manifestPlaceholders = [ CHANNEL_NAME:"Google"]
+        flavorDimensions "platform", "environment"
+        missingDimensionStrategy "platform", "patient"
 
         multiDexEnabled true
 
@@ -27,19 +34,13 @@ android {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
             }
         }
+
     }
 
     buildFeatures.dataBinding = true
 
     // 签名配置
     signingConfigs {
-        dev {
-            storeFile file("../zhanghq.jks")
-            storePassword "zhanghq123456"
-            keyAlias "zhanghq"
-            keyPassword "zhanghq123456"
-        }
-
         release {
             storeFile file("../zhanghq.jks")
             storePassword "zhanghq123456"
@@ -53,11 +54,10 @@ android {
             // 显示Log
             buildConfigField "boolean", "LOG_DEBUG", "true"
 
-            versionNameSuffix ""
             minifyEnabled false
             zipAlignEnabled false
             shrinkResources false
-            signingConfig signingConfigs.dev
+            signingConfig signingConfigs.release
         }
 
         release {
@@ -80,27 +80,25 @@ android {
         }
     }
 
-    flavorDimensions "channel"
     productFlavors {
-        google {
-            manifestPlaceholders = [ CHANNEL_NAME:"GooglePlay"]
+        develop {
+            dimension "environment"
+            buildConfigField "int", "ENV", "$ENV_DEVELOP"
         }
-        yingyongbao {
-            manifestPlaceholders = [ CHANNEL_NAME:"YingYongBao"]
+        qa {
+            dimension "environment"
+            buildConfigField "int", "ENV", "$ENV_TEST"
         }
-        wandoujia {
-            manifestPlaceholders = [ CHANNEL_NAME:"WanDouJia" ]
+        product {
+            dimension "environment"
+            buildConfigField "int", "ENV", "$ENV_PRODUCT"
         }
-        baidu {
-            manifestPlaceholders = [ CHANNEL_NAME:"BaiDu" ]
-        }
-        xiaomi {
-            manifestPlaceholders = [ CHANNEL_NAME:"XiaoMi" ]
-        }
-        _360 {
-            manifestPlaceholders = [ CHANNEL_NAME:"360" ]
+
+        jianke {
+            dimension "platform"
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
